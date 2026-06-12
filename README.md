@@ -36,10 +36,12 @@ Nutritrack/
 ├── sw.js            # Service worker (offline caching)
 ├── manifest.json    # PWA metadata (name, icons, shortcuts)
 ├── privacy.html     # Privacy policy page
+├── _headers         # Cloudflare Pages HTTP headers config
+├── _redirects       # Cloudflare Pages redirect rules
 ├── robots.txt
 ├── sitemap.xml
 ├── icons/           # App icons (72px – 512px)
-└── screenshots/     # Store / PWA install screenshots
+└── screenshots/     # dashboard, log, goals, recipes, today pages
 ```
 
 ---
