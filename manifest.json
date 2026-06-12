@@ -29,7 +29,7 @@
     { "src": "/screenshots/log-page.jpg",       "sizes": "1080x2107", "type": "image/jpeg", "form_factor": "narrow", "label": "Meal Log" },
     { "src": "/screenshots/recepies-page.jpg",  "sizes": "1080x2107", "type": "image/jpeg", "form_factor": "narrow", "label": "Recipes" },
     { "src": "/screenshots/ingredients-page.jpg","sizes": "1080x2107","type": "image/jpeg", "form_factor": "narrow", "label": "Foods" },
-    { "src": "/screenshots/goals-page.jpg",     "sizes": "390x844",   "type": "image/jpeg", "form_factor": "narrow", "label": "Goals" },
+    { "src": "/screenshots/goals-page.jpg",     "sizes": "1080x2107",   "type": "image/jpeg", "form_factor": "narrow", "label": "Goals" },
     { "src": "/screenshots/dashboard-wide.jpg", "sizes": "1440x810",  "type": "image/jpeg", "form_factor": "wide",   "label": "Dashboard Wide" }
   ],
   "id": "/"
