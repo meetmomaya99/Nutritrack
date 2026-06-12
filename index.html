@@ -1,0 +1,3188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<meta name="theme-color" content="#1a2e1a"/>
+<meta name="description" content="Track your daily nutrition — fully offline, no account needed"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="NutriTrack"/>
+<!-- Apple touch icons -->
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png"/>
+<link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png"/>
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png"/>
+<!-- Manifest -->
+<link rel="manifest" href="/manifest.json"/>
+<!-- Privacy -->
+<link rel="privacy-policy" href="/privacy.html"/>
+<title>NutriTrack — Offline Nutrition Tracker</title>
+<style>
+  /* Offline-safe system font stacks */
+  /* Display/serif: Georgia → Palatino → system serif (looks great on all platforms) */
+  /* Body: system-ui stack → covers SF Pro (iOS/macOS), Roboto (Android), Segoe UI (Windows) */
+</style>
+<style>
+:root {
+  --bg: #0d1a0d;
+  --bg2: #111f11;
+  --bg3: #162416;
+  --card: #1a2e1a;
+  --card2: #1f361f;
+  --border: #2a3d2a;
+  --border2: #344834;
+  --accent: #5a9e5a;
+  --accent2: #4a8e4a;
+  --accent3: #6db86d;
+  --gold: #c9a84c;
+  --gold2: #e8c97a;
+  --text: #e8f0e8;
+  --text2: #a8c4a8;
+  --text3: #6a8a6a;
+  --danger: #c96a6a;
+  --warn: #c9a84c;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.6);
+  --font-display: Georgia, 'Times New Roman', 'Palatino Linotype', Palatino, serif;
+  --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%; width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout ── */
+#app {
+  display: flex; flex-direction: column;
+  height: 100dvh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── Header ── */
+.header {
+  padding: calc(var(--safe-top) + 16px) 20px 16px;
+  background: linear-gradient(180deg, var(--bg) 0%, transparent 100%);
+  position: relative; z-index: 10;
+  flex-shrink: 0;
+}
+.header-top { display: flex; align-items: center; justify-content: space-between; }
+.logo { font-family: var(--font-display); font-size: 26px; color: var(--accent3); letter-spacing: -0.5px; }
+.logo span { color: var(--gold2); font-style: italic; }
+.date-badge {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 12px;
+  font-size: 12px; color: var(--text2); font-weight: 500;
+}
+
+/* ── Tab Bar ── */
+.tabs {
+  display: flex; gap: 4px;
+  padding: 0 20px; margin-top: 14px;
+}
+.tab {
+  flex: 1; padding: 8px 4px;
+  border: none; background: var(--card);
+  border-radius: var(--radius-sm);
+  color: var(--text3); font-family: var(--font-body);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  border: 1px solid var(--border);
+}
+.tab svg { width: 18px; height: 18px; }
+.tab.active {
+  background: var(--accent2); color: #fff;
+  border-color: var(--accent);
+  box-shadow: 0 2px 12px rgba(90,158,90,0.3);
+}
+.tab:not(.active):hover { background: var(--card2); color: var(--text2); }
+
+/* ── Pages ── */
+.pages { flex: 1; overflow: hidden; position: relative; }
+.page {
+  position: absolute; inset: 0;
+  overflow-y: auto; overflow-x: hidden;
+  padding: 16px 20px calc(var(--safe-bottom) + 20px);
+  opacity: 0; pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity 0.25s, transform 0.25s;
+  scrollbar-width: none;
+}
+.page::-webkit-scrollbar { display: none; }
+.page.active { opacity: 1; pointer-events: all; transform: translateY(0); }
+
+/* ── Cards ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 12px;
+}
+.card-title {
+  font-family: var(--font-display);
+  font-size: 17px; color: var(--text);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.card-title .icon { font-size: 20px; }
+
+/* ── Daily Ring ── */
+.daily-overview {
+  background: linear-gradient(135deg, var(--card2) 0%, var(--card) 100%);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 20px;
+}
+.ring-wrap { position: relative; flex-shrink: 0; }
+.ring-svg { width: 90px; height: 90px; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--border2); stroke-width: 8; }
+.ring-fill { fill: none; stroke: var(--accent3); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1); }
+.ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center;
+}
+.ring-pct { font-family: var(--font-display); font-size: 20px; color: var(--text); line-height: 1; }
+.ring-label { font-size: 9px; color: var(--text3); font-weight: 500; margin-top: 2px; }
+.daily-stats { flex: 1; }
+.daily-cal { font-family: var(--font-display); font-size: 28px; color: var(--accent3); line-height: 1; }
+.daily-cal-label { font-size: 11px; color: var(--text3); margin-bottom: 8px; }
+.daily-remain { font-size: 12px; color: var(--text2); }
+.daily-remain strong { color: var(--gold2); }
+
+/* ── Macro Bars ── */
+/* ── Macro section ── */
+.macro-section { margin-bottom: 12px; }
+.macro-section-label {
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  margin-bottom: 6px; padding-left: 2px;
+}
+.macro-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.macro-grid.two { grid-template-columns: 1fr 1fr; }
+.macro-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px;
+}
+.macro-card.sub {
+  background: var(--bg3); border-style: dashed;
+  padding: 9px 12px;
+}
+.macro-label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+.macro-label.sub-label { color: var(--text3); font-size: 9px; }
+.macro-val { font-family: var(--font-display); font-size: 18px; color: var(--text); line-height: 1; }
+.macro-card.sub .macro-val { font-size: 15px; color: var(--text2); }
+.macro-unit { font-size: 10px; color: var(--text3); }
+.macro-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.macro-card.sub .macro-bar-wrap { height: 3px; margin-top: 6px; }
+.macro-bar { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
+.macro-bar.carbs   { background: linear-gradient(90deg, #5a9e5a, #6db86d); }
+.macro-bar.protein { background: linear-gradient(90deg, #c9a84c, #e8c97a); }
+.macro-bar.fat     { background: linear-gradient(90deg, #7a9ec9, #9ab8e8); }
+.macro-bar.fiber   { background: linear-gradient(90deg, #c97a9e, #e89ab8); opacity:0.7; }
+.macro-bar.sugar   { background: linear-gradient(90deg, #c9784c, #e8a87a); opacity:0.7; }
+.macro-bar.satfat  { background: linear-gradient(90deg, #9a6ac9, #c49ae8); opacity:0.7; }
+
+/* ── Micro nutrients ── */
+.micro-grid { display: flex; flex-direction: column; gap: 8px; }
+.micro-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.micro-name { font-size: 11px; color: var(--text2); width: 74px; min-width: 74px; flex-shrink: 0; line-height: 1.2; }
+.micro-bar-wrap { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; min-width: 0; }
+.micro-bar { height: 100%; border-radius: 3px; transition: width 0.6s ease; background: var(--accent2); }
+.micro-bar.warn { background: var(--warn); }
+.micro-bar.danger { background: var(--danger); }
+.micro-val { font-size: 10px; color: var(--text3); white-space: nowrap; text-align: right; flex-shrink: 0; min-width: 60px; }
+
+/* ── Log list ── */
+.log-date-header {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 4px 0 8px; margin-top: 4px;
+}
+.log-item {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 12px;
+  transition: border-color 0.2s;
+  position: relative; overflow: hidden;
+}
+.log-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--accent2); border-radius: 2px 0 0 2px;
+}
+.log-item:active { border-color: var(--accent); }
+.log-item-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--bg3); display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.log-item-info { flex: 1; min-width: 0; }
+.log-item-name { font-weight: 500; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.log-item-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.log-item-cal { font-family: var(--font-display); font-size: 16px; color: var(--accent3); flex-shrink: 0; }
+.log-item-del {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: transparent; border: none;
+  color: var(--text3); cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.log-item-del:hover { background: rgba(201,106,106,0.15); color: var(--danger); }
+
+/* ── Empty state ── */
+.empty {
+  text-align: center; padding: 40px 20px;
+  color: var(--text3);
+}
+.empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+.empty-title { font-family: var(--font-display); font-size: 18px; color: var(--text2); margin-bottom: 6px; }
+.empty-sub { font-size: 13px; line-height: 1.5; }
+
+/* ── FAB ── */
+.fab {
+  position: fixed; bottom: calc(var(--safe-bottom) + 24px); right: 24px;
+  width: 56px; height: 56px; border-radius: 18px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; color: #fff; font-size: 26px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 20px rgba(90,158,90,0.5);
+  cursor: pointer; transition: all 0.2s; z-index: 100;
+}
+.fab:active { transform: scale(0.94); box-shadow: 0 2px 10px rgba(90,158,90,0.4); }
+
+/* ── Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.25s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 24px 24px 0 0;
+  width: 100%; max-width: 480px;
+  padding: 0 0 calc(var(--safe-bottom) + 24px);
+  max-height: 92dvh; overflow-y: auto;
+  transform: translateY(100%); transition: transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 12px auto 0; }
+.modal-header { padding: 16px 20px 0; display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-family: var(--font-display); font-size: 20px; }
+.modal-close { background: var(--card); border: 1px solid var(--border); border-radius: 50%; width: 32px; height: 32px; cursor: pointer; color: var(--text2); font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.modal-close:hover { background: var(--card2); }
+.modal-body { padding: 16px 20px; }
+
+/* ── Form ── */
+.form-section { margin-bottom: 16px; }
+.form-label {
+  font-size: 11px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 6px; display: block;
+}
+.form-input {
+  width: 100%; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 11px 14px;
+  color: var(--text); font-family: var(--font-body); font-size: 14px;
+  transition: border-color 0.2s; outline: none;
+}
+.form-input:focus { border-color: var(--accent); }
+.form-input::placeholder { color: var(--text3); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+.nutrient-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.nutrient-field { display: flex; flex-direction: column; gap: 4px; }
+.nutrient-label { font-size: 10px; color: var(--text3); font-weight: 500; }
+.nutrient-input-wrap { position: relative; }
+.nutrient-input {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 36px 8px 10px;
+  color: var(--text); font-family: var(--font-body); font-size: 13px;
+  transition: border-color 0.2s; outline: none;
+}
+.nutrient-input:focus { border-color: var(--accent); background: var(--card); }
+.nutrient-unit {
+  position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+  font-size: 10px; color: var(--text3); pointer-events: none;
+}
+
+.emoji-picker { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.emoji-btn {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--card); border: 2px solid transparent;
+  font-size: 18px; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.emoji-btn:hover { background: var(--card2); }
+.emoji-btn.selected { border-color: var(--accent); background: rgba(90,158,90,0.15); }
+
+.btn {
+  width: 100%; padding: 14px; border-radius: var(--radius-sm);
+  border: none; font-family: var(--font-body); font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff; box-shadow: 0 4px 16px rgba(90,158,90,0.3);
+}
+.btn-primary:active { transform: scale(0.98); }
+.btn-secondary {
+  background: var(--card); color: var(--text2);
+  border: 1px solid var(--border);
+}
+
+/* ── Recipe Library ── */
+.recipe-item {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px;
+  margin-bottom: 8px; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
+  transition: all 0.2s;
+}
+.recipe-item:active { border-color: var(--accent); background: var(--card2); }
+.recipe-icon { font-size: 24px; width: 44px; height: 44px; background: var(--bg3); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.recipe-info { flex: 1; min-width: 0; }
+.recipe-name { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.recipe-cal { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.recipe-macros { font-size: 10px; color: var(--text3); margin-top: 3px; }
+.recipe-actions { display: flex; gap: 6px; }
+.recipe-btn {
+  padding: 6px 12px; border-radius: 8px; border: none;
+  font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.recipe-btn-log { background: var(--accent2); color: #fff; }
+.recipe-btn-del { background: var(--card2); color: var(--text3); border: 1px solid var(--border); }
+.recipe-btn:active { transform: scale(0.95); }
+
+/* ── Goals page ── */
+.goal-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.goal-item:last-child { border-bottom: none; }
+.goal-name { flex: 1; font-size: 13px; color: var(--text2); }
+.goal-input {
+  width: 80px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; color: var(--text);
+  font-family: var(--font-body); font-size: 13px; text-align: right;
+  outline: none; transition: border-color 0.2s;
+}
+.goal-input:focus { border-color: var(--accent); }
+.goal-unit { font-size: 11px; color: var(--text3); width: 32px; }
+
+.section-title {
+  font-family: var(--font-display); font-size: 16px; color: var(--text2);
+  margin-bottom: 10px; margin-top: 4px;
+  display: flex; align-items: center; gap: 6px;
+}
+
+/* ── Alerts ── */
+.alert {
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  margin-bottom: 10px; font-size: 12px; line-height: 1.5;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.alert-warn { background: rgba(201,168,76,0.12); border: 1px solid rgba(201,168,76,0.3); color: var(--gold2); }
+.alert-good { background: rgba(90,158,90,0.12); border: 1px solid rgba(90,158,90,0.3); color: var(--accent3); }
+.alert-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+/* ── Toast ── */
+.toast {
+  position: fixed; top: calc(var(--safe-top) + 16px); left: 50%; transform: translateX(-50%) translateY(-80px);
+  background: var(--card2); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 10px 20px;
+  font-size: 13px; font-weight: 500; color: var(--text);
+  z-index: 300; transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+  white-space: nowrap; box-shadow: var(--shadow-lg);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── Quick Add Modal ── */
+.quick-recipe-list { max-height: 200px; overflow-y: auto; margin-bottom: 12px; }
+.quick-recipe-btn {
+  width: 100%; padding: 10px 14px; margin-bottom: 6px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: var(--font-body); font-size: 13px;
+  cursor: pointer; text-align: left; transition: all 0.15s;
+  display: flex; align-items: center; gap: 10px;
+}
+.quick-recipe-btn:hover { border-color: var(--accent); background: var(--card2); }
+.quick-recipe-btn .qr-icon { font-size: 18px; }
+.quick-recipe-btn .qr-info { flex: 1; }
+.quick-recipe-btn .qr-name { font-weight: 500; }
+.quick-recipe-btn .qr-cal { font-size: 11px; color: var(--text3); }
+
+.divider { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+.divider-line { flex: 1; height: 1px; background: var(--border); }
+.divider-text { font-size: 11px; color: var(--text3); font-weight: 500; }
+
+/* ── History bars ── */
+.history-day { margin-bottom: 10px; }
+.history-day-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+.history-bar-wrap { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.history-bar { height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--accent2), var(--accent3)); transition: width 0.5s ease; }
+.history-bar.over { background: linear-gradient(90deg, var(--warn), var(--danger)); }
+
+/* ── Recipe Detail / Edit ── */
+.recipe-detail-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+}
+.recipe-detail-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: var(--bg3); font-size: 26px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.recipe-detail-meta { flex: 1; }
+.recipe-detail-name { font-family: var(--font-display); font-size: 20px; line-height: 1.2; }
+.recipe-detail-notes { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+.ingredient-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.ingredient-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px;
+}
+.ingredient-row-name { flex: 1; font-size: 13px; color: var(--text); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ingredient-row-amount { font-size: 12px; color: var(--accent3); font-weight: 500; white-space: nowrap; }
+.ingredient-row-del {
+  background: none; border: none; color: var(--text3);
+  cursor: pointer; font-size: 16px; padding: 0 2px;
+  transition: color 0.15s; flex-shrink: 0;
+}
+.ingredient-row-del:hover { color: var(--danger); }
+
+.add-ingredient-row {
+  display: flex; gap: 6px; align-items: flex-end;
+}
+.add-ingredient-row .form-input { flex: 2; }
+.add-ingredient-row .form-input.amount { flex: 1; }
+.add-ingredient-row .add-ing-btn {
+  padding: 11px 14px; background: var(--accent2); border: none;
+  border-radius: var(--radius-sm); color: #fff; font-size: 18px;
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.add-ingredient-row .add-ing-btn:active { transform: scale(0.95); }
+
+.steps-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.step-row {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px;
+  transition: border-color 0.2s;
+}
+.step-row:focus-within { border-color: var(--accent); }
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent2); color: #fff;
+  font-size: 11px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+}
+.step-text {
+  flex: 1; font-size: 13px; color: var(--text); line-height: 1.4;
+  background: none; border: none; outline: none; resize: none;
+  font-family: var(--font-body); min-height: 20px;
+  overflow: hidden; word-break: break-word;
+}
+.step-del {
+  background: none; border: none; color: var(--text3);
+  cursor: pointer; font-size: 16px; padding: 0 2px;
+  transition: color 0.15s; flex-shrink: 0; margin-top: 1px;
+}
+.step-del:hover { color: var(--danger); }
+
+.add-step-row { display: flex; gap: 6px; }
+.add-step-row textarea {
+  flex: 1; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px;
+  color: var(--text); font-family: var(--font-body); font-size: 13px;
+  resize: none; outline: none; min-height: 60px; transition: border-color 0.2s;
+}
+.add-step-row textarea:focus { border-color: var(--accent); }
+.add-step-row .add-ing-btn { align-self: flex-end; }
+
+.nutrient-summary-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px; margin-bottom: 12px;
+}
+.ns-cell {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; text-align: center;
+}
+.ns-val { font-family: var(--font-display); font-size: 15px; color: var(--accent3); }
+.ns-label { font-size: 9px; color: var(--text3); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+
+.tab-switcher {
+  display: flex; gap: 4px; margin-bottom: 14px;
+  background: var(--bg3); border-radius: 10px; padding: 3px;
+}
+.tab-sw-btn {
+  flex: 1; padding: 7px; border: none; border-radius: 8px;
+  background: transparent; color: var(--text3);
+  font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+}
+.tab-sw-btn.active { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+
+
+/* ── Export / Import / Backup ── */
+.data-inline-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  margin-top: 10px; margin-bottom: 4px;
+}
+.data-inline-title {
+  font-size: 12px; font-weight: 600; color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;
+}
+.data-inline-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.data-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.data-btn {
+  padding: 12px 8px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--card);
+  color: var(--text2); font-family: var(--font-body); font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  text-align: center;
+}
+.data-btn:hover { background: var(--card2); border-color: var(--accent); color: var(--text); }
+.data-btn:active { transform: scale(0.97); }
+.data-btn .db-icon { font-size: 20px; }
+.data-btn.accent { background: var(--accent2); border-color: var(--accent); color: #fff; }
+.data-btn.accent:hover { background: var(--accent); }
+.data-btn.danger-btn { border-color: rgba(201,106,106,0.4); color: var(--danger); }
+.data-btn.danger-btn:hover { background: rgba(201,106,106,0.1); }
+
+/* ── Servings stepper ── */
+.servings-stepper {
+  display: flex; align-items: center; gap: 0;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); overflow: hidden;
+  height: 38px; width: 130px;
+}
+.step-btn {
+  width: 38px; height: 38px; border: none; background: var(--card2);
+  color: var(--text); font-size: 18px; cursor: pointer;
+  transition: background 0.15s; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.step-btn:active { background: var(--accent2); color: #fff; }
+.step-val {
+  flex: 1; text-align: center; font-size: 15px; font-weight: 600;
+  color: var(--text); border: none; background: none;
+  outline: none; font-family: var(--font-body);
+}
+.servings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 12px;
+}
+.servings-row-label { font-size: 13px; color: var(--text2); }
+.servings-row-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.per-serving-badge {
+  display: inline-block; background: rgba(90,158,90,0.15);
+  border: 1px solid rgba(90,158,90,0.3); border-radius: 6px;
+  padding: 2px 8px; font-size: 10px; color: var(--accent3);
+  font-weight: 600; margin-left: 6px; vertical-align: middle;
+}
+
+/* ── Custom confirm dialog ── */
+.confirm-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; padding: 24px;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.confirm-overlay.open { opacity: 1; pointer-events: all; }
+.confirm-box {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: 20px; padding: 24px 20px 20px;
+  width: 100%; max-width: 340px;
+  transform: scale(0.92); transition: transform 0.2s;
+}
+.confirm-overlay.open .confirm-box { transform: scale(1); }
+.confirm-title { font-family: var(--font-display); font-size: 18px; margin-bottom: 8px; }
+.confirm-msg { font-size: 13px; color: var(--text2); line-height: 1.5; margin-bottom: 20px; }
+.confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.confirm-btns.three { grid-template-columns: 1fr 1fr 1fr; }
+.confirm-btn {
+  padding: 12px; border-radius: var(--radius-sm); border: none;
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.confirm-btn-cancel { background: var(--card2); color: var(--text2); border: 1px solid var(--border); }
+.confirm-btn-ok { background: var(--accent2); color: #fff; }
+.confirm-btn-ok.danger { background: var(--danger); }
+.confirm-btn-alt { background: var(--card2); color: var(--text); border: 1px solid var(--border2); }
+.confirm-btn:active { transform: scale(0.97); }
+
+/* ── Custom file picker button ── */
+.file-input-hidden {
+  position: absolute; width: 1px; height: 1px;
+  opacity: 0; pointer-events: none; overflow: hidden;
+}
+
+/* ── Ingredients page ── */
+.ing-item {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 12px;
+  cursor: pointer; transition: border-color 0.2s; position: relative; overflow: hidden;
+}
+.ing-item::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; border-radius: 2px 0 0 2px;
+}
+.ing-item.grain::before   { background: #c9a84c; }
+.ing-item.dairy::before   { background: #6ac9b8; }
+.ing-item.fruit::before   { background: #c96a6a; }
+.ing-item.vegetable::before { background: #5a9e5a; }
+.ing-item.protein::before { background: #c97a6a; }
+.ing-item.fat::before     { background: #9a9e5a; }
+.ing-item.spice::before   { background: #c96a9a; }
+.ing-item.other::before   { background: #6a8ac9; }
+.ing-icon { font-size: 22px; width: 40px; height: 40px; background: var(--bg3); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ing-info { flex: 1; min-width: 0; }
+.ing-name { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ing-sub  { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.ing-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.ing-btn {
+  padding: 6px 10px; border-radius: 8px; border: none;
+  font-family: var(--font-body); font-size: 11px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.ing-btn-build { background: var(--accent2); color: #fff; }
+.ing-btn-edit  { background: var(--card2); color: var(--text3); border: 1px solid var(--border); }
+.ing-btn:active { transform: scale(0.95); }
+
+.cat-header {
+  font-size: 10px; font-weight: 700; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 8px 2px 4px; margin-top: 4px;
+}
+
+/* Recipe builder search results */
+.rb-result {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  transition: background 0.15s; border: 1px solid transparent;
+}
+.rb-result:hover { background: var(--card); border-color: var(--border); }
+.rb-result-icon { font-size: 18px; }
+.rb-result-info { flex: 1; }
+.rb-result-name { font-size: 13px; font-weight: 500; }
+.rb-result-cal  { font-size: 11px; color: var(--text3); }
+.rb-add-btn {
+  background: var(--accent2); border: none; color: #fff;
+  border-radius: 6px; padding: 4px 10px; font-size: 12px;
+  cursor: pointer; flex-shrink: 0;
+}
+
+/* Builder ingredient rows */
+.rb-ing-row {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 10px; margin-bottom: 6px;
+}
+.rb-ing-name { flex: 1; font-size: 13px; }
+.rb-ing-amt {
+  width: 70px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 8px; color: var(--text);
+  font-family: var(--font-body); font-size: 13px; text-align: right; outline: none;
+}
+.rb-ing-unit { font-size: 11px; color: var(--text3); width: 16px; }
+.rb-ing-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 16px; }
+.rb-ing-del:hover { color: var(--danger); }
+
+/* ── Linked ingredient rows ── */
+.linked-row {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(90,158,90,0.08); border: 1px solid rgba(90,158,90,0.25);
+  border-radius: 8px; padding: 7px 10px; margin-bottom: 5px;
+}
+.linked-row-icon { font-size: 16px; flex-shrink: 0; }
+.linked-row-name { flex: 1; font-size: 13px; color: var(--text); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.linked-row-amt {
+  width: 58px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 6px; color: var(--text);
+  font-family: var(--font-body); font-size: 12px; text-align: right; outline: none;
+}
+.linked-row-unit {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 5px; color: var(--text3);
+  font-family: var(--font-body); font-size: 11px; cursor: pointer;
+  flex-shrink: 0; outline: none; max-width: 58px;
+}
+.linked-row-del { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 15px; flex-shrink: 0; }
+.linked-row-del:hover { color: var(--danger); }
+.link-result {
+  display: flex; align-items: center; gap: 8px; padding: 7px 8px;
+  border-radius: 8px; cursor: pointer; transition: background 0.15s;
+}
+.link-result:hover { background: var(--card); }
+.link-result-name { flex: 1; font-size: 13px; }
+.link-result-cal { font-size: 11px; color: var(--text3); }
+.link-add-btn {
+  background: var(--accent2); border: none; color: #fff;
+  border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer;
+}
+
+.meas-row { display:flex; align-items:center; gap:8px; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:6px 10px; margin-bottom:5px; font-size:13px; }
+.meas-row-label { flex:1; color:var(--text2); }
+.meas-row-val { color:var(--accent3); font-weight:500; }
+.meas-row-del { background:none; border:none; color:var(--text3); cursor:pointer; font-size:15px; }
+.meas-row-del:hover { color:var(--danger); }
+/* animations */
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.animate-in { animation: fadeIn 0.3s ease forwards; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">Nutri<span>Track</span></div>
+      <div class="date-badge" id="dateLabel"></div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('today')" id="tab-today">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Today
+      </button>
+      <button class="tab" onclick="switchTab('log')" id="tab-log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Log
+      </button>
+      <button class="tab" onclick="switchTab('recipes')" id="tab-recipes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg>
+        Recipes
+      </button>
+      <button class="tab" onclick="switchTab('ingredients')" id="tab-ingredients">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h8M12 8v8"/></svg>
+        Foods
+      </button>
+      <button class="tab" onclick="switchTab('goals')" id="tab-goals">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Goals
+      </button>
+    </div>
+  </div>
+
+  <!-- Pages -->
+  <div class="pages">
+
+    <!-- TODAY -->
+    <div class="page active" id="page-today">
+      <!-- Calorie Ring -->
+      <div class="daily-overview" id="overviewCard">
+        <div class="ring-wrap">
+          <svg class="ring-svg" viewBox="0 0 90 90">
+            <circle class="ring-bg" cx="45" cy="45" r="37"/>
+            <circle class="ring-fill" id="ringFill" cx="45" cy="45" r="37" stroke-dasharray="232.5" stroke-dashoffset="232.5"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-pct" id="ringPct">0%</div>
+            <div class="ring-label">of goal</div>
+          </div>
+        </div>
+        <div class="daily-stats">
+          <div class="daily-cal" id="todayCal">0</div>
+          <div class="daily-cal-label">calories consumed</div>
+          <div class="daily-remain" id="todayRemain">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Macros -->
+      <div class="macro-section">
+        <div class="macro-section-label">Macronutrients</div>
+        <div class="macro-grid two" style="margin-bottom:8px">
+          <div class="macro-card">
+            <div class="macro-label">Carbs</div>
+            <div><span class="macro-val" id="mCarbs">0</span><span class="macro-unit">g</span></div>
+            <div class="macro-bar-wrap"><div class="macro-bar carbs" id="bCarbs" style="width:0%"></div></div>
+          </div>
+          <div class="macro-card">
+            <div class="macro-label">Protein</div>
+            <div><span class="macro-val" id="mProtein">0</span><span class="macro-unit">g</span></div>
+            <div class="macro-bar-wrap"><div class="macro-bar protein" id="bProtein" style="width:0%"></div></div>
+          </div>
+          <div class="macro-card">
+            <div class="macro-label">Fat</div>
+            <div><span class="macro-val" id="mFat">0</span><span class="macro-unit">g</span></div>
+            <div class="macro-bar-wrap"><div class="macro-bar fat" id="bFat" style="width:0%"></div></div>
+          </div>
+          <div class="macro-card">
+            <div class="macro-label">Fiber</div>
+            <div><span class="macro-val" id="mFiber">0</span><span class="macro-unit">g</span></div>
+            <div class="macro-bar-wrap"><div class="macro-bar fiber" id="bFiber" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="macro-section-label" style="margin-top:4px">Sub-macros</div>
+        <div class="macro-grid two">
+          <div class="macro-card sub">
+            <div class="macro-label sub-label">↳ Sugar <span style="opacity:0.6">(of carbs)</span></div>
+            <div><span class="macro-val" id="mSugar">0</span><span class="macro-unit">g</span></div>
+            <div class="macro-bar-wrap"><div class="macro-bar sugar" id="bSugar" style="width:0%"></div></div>
+          </div>
+          <div class="macro-card sub">
+            <div class="macro-label sub-label">↳ Sat Fat <span style="opacity:0.6">(of fat)</span></div>
+            <div><span class="macro-val" id="mSatFat">0</span><span class="macro-unit">g</span></div>
+            <div class="macro-bar-wrap"><div class="macro-bar satfat" id="bSatFat" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Micronutrients -->
+      <div class="card">
+        <div class="card-title"><span class="icon">🔬</span> Micronutrients</div>
+        <div class="micro-grid" id="microGrid"></div>
+      </div>
+
+      <!-- Today's entries -->
+      <div class="card">
+        <div class="card-title"><span class="icon">📋</span> Today's Meals</div>
+        <div id="todayEntries"></div>
+      </div>
+
+      <!-- 7-day history -->
+      <div class="card">
+        <div class="card-title"><span class="icon">📈</span> This Week</div>
+        <div id="historyBars"></div>
+      </div>
+    </div>
+
+    <!-- LOG -->
+    <div class="page" id="page-log">
+      <div id="logList"></div>
+      <div class="data-inline-card">
+        <div class="data-inline-title">📋 Log Data</div>
+        <div class="data-inline-row">
+          <button class="data-btn" onclick="exportLogCSV()"><span class="db-icon">⬇️</span>Export CSV</button>
+          <button class="data-btn" onclick="importSpecificCSV('log')"><span class="db-icon">⬆️</span>Import CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECIPES -->
+    <div class="page" id="page-recipes">
+      <div class="alert alert-good">
+        <span class="alert-icon">💡</span>
+        Save your meals here. Then quickly log them from the + button.
+      </div>
+      <div id="recipeList"></div>
+      <div class="data-inline-card">
+        <div class="data-inline-title">📦 Recipes Data</div>
+        <div class="data-inline-row">
+          <button class="data-btn" onclick="exportRecipesCSV()"><span class="db-icon">⬇️</span>Export CSV</button>
+          <button class="data-btn" onclick="importSpecificCSV('recipes')"><span class="db-icon">⬆️</span>Import CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOALS -->
+    <div class="page" id="page-goals">
+      <div class="card">
+        <div class="card-title"><span class="icon">🎯</span> Daily Targets</div>
+        <div id="goalFields"></div>
+        <button class="btn btn-primary" style="margin-top:14px" onclick="saveGoals()">Save Goals</button>
+      </div>
+      <div class="card" style="margin-top:4px">
+        <div class="card-title"><span class="icon">👤</span> Your Profile</div>
+        <div class="goal-item">
+          <span class="goal-name">Age</span>
+          <input class="goal-input" type="number" id="prof-age" value="27"/>
+          <span class="goal-unit">yrs</span>
+        </div>
+        <div class="goal-item">
+          <span class="goal-name">Weight</span>
+          <input class="goal-input" type="number" id="prof-weight" value="90"/>
+          <span class="goal-unit">kg</span>
+        </div>
+        <div class="goal-item">
+          <span class="goal-name">Height</span>
+          <input class="goal-input" type="number" id="prof-height" value="181"/>
+          <span class="goal-unit">cm</span>
+        </div>
+        <button class="btn btn-secondary" style="margin-top:14px" onclick="calcGoals()">Auto-Calculate Goals</button>
+      </div>
+
+      <!-- Goals CSV -->
+      <div class="data-inline-card">
+        <div class="data-inline-title">🎯 Goals Data</div>
+        <div class="data-inline-row">
+          <button class="data-btn" onclick="exportGoalsCSV()"><span class="db-icon">⬇️</span>Export CSV</button>
+          <button class="data-btn" onclick="importSpecificCSV('goals')"><span class="db-icon">⬆️</span>Import CSV</button>
+        </div>
+      </div>
+
+      <!-- Full Backup -->
+      <div class="data-inline-card" style="border-color:rgba(201,168,76,0.3);background:rgba(201,168,76,0.05)">
+        <div class="data-inline-title" style="color:var(--gold2)">💾 Full Backup</div>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:10px;line-height:1.5">JSON format — includes all recipes, logs and goals. Use this to transfer to another device or restore everything.</p>
+        <div class="data-inline-row">
+          <button class="data-btn accent" onclick="exportFullBackup()"><span class="db-icon">⬇️</span>Export JSON</button>
+          <button class="data-btn accent" onclick="importSpecificJSON('backup')"><span class="db-icon">⬆️</span>Import JSON</button>
+        </div>
+      </div>
+
+      <!-- Danger zone -->
+      <div class="data-inline-card" style="border-color:rgba(201,106,106,0.3);background:rgba(201,106,106,0.05)">
+        <div class="data-inline-title" style="color:var(--danger)">⚠️ Danger Zone</div>
+        <button class="data-btn danger-btn" style="width:100%;flex-direction:row;gap:10px;padding:13px 14px" onclick="clearAllData()">
+          <span class="db-icon">🗑</span>
+          <div style="text-align:left"><div style="font-size:13px;font-weight:600">Clear All Data</div><div style="font-size:11px;color:var(--text3)">Permanently delete all logs, recipes &amp; goals</div></div>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- INGREDIENTS / FOODS -->
+    <div class="page" id="page-ingredients">
+      <div class="alert alert-good">
+        <span class="alert-icon">💡</span>
+        Save foods with per-100g nutrients. Build recipes by picking foods and entering amounts.
+      </div>
+      <!-- Search -->
+      <div style="position:relative;margin-bottom:10px">
+        <input class="form-input" id="ingSearchInput" placeholder="🔍 Search foods…" oninput="renderIngredientsList()" style="padding-left:14px"/>
+      </div>
+      <div id="ingredientsList"></div>
+      <!-- Data card -->
+      <div class="data-inline-card">
+        <div class="data-inline-title">🥕 Foods Data</div>
+        <div class="data-inline-row">
+          <button class="data-btn" onclick="exportIngredientsCSV()"><span class="db-icon">⬇️</span>Export CSV</button>
+          <button class="data-btn" onclick="importSpecificCSV('ingredients')"><span class="db-icon">⬆️</span>Import CSV</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /pages -->
+</div><!-- /app -->
+
+<!-- FAB -->
+<button class="fab" onclick="openAddModal()" title="Add meal">+</button>
+
+<!-- ADD MEAL MODAL -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="addModalTitle">Add Meal</div>
+      <button class="modal-close" onclick="closeModal('addModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Quick log from saved recipes -->
+      <div id="quickRecipes"></div>
+      <div class="divider"><div class="divider-line"></div><div class="divider-text">OR LOG CUSTOM</div><div class="divider-line"></div></div>
+
+      <div class="form-section">
+        <label class="form-label">Recipe / Meal Name</label>
+        <input class="form-input" id="addName" placeholder="e.g. Sooji Chella" />
+      </div>
+      <div class="form-section">
+        <label class="form-label">Icon</label>
+        <div class="emoji-picker" id="emojiPicker"></div>
+      </div>
+      <div class="form-section">
+        <label class="form-label">Nutrients</label>
+        <div class="nutrient-grid" id="nutrientFields"></div>
+      </div>
+      <div class="form-section">
+        <label class="form-label">Meal Time</label>
+        <input class="form-input" type="time" id="addTime"/>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn btn-primary" style="flex:2" onclick="logMeal()">Log Meal</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="saveAndLogMeal()">Save + Log</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD RECIPE MODAL -->
+<div class="modal-overlay" id="recipeModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">Save Recipe</div>
+      <button class="modal-close" onclick="closeModal('recipeModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">
+        <label class="form-label">Recipe Name</label>
+        <input class="form-input" id="recName" placeholder="e.g. Sooji Chella"/>
+      </div>
+      <div class="form-section">
+        <label class="form-label">Icon</label>
+        <div class="emoji-picker" id="emojiPickerRec"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div>
+          <label class="form-label">Total Servings</label>
+          <input class="form-input" type="number" id="recServings" placeholder="1" min="0.25" step="0.25" value="1"/>
+        </div>
+        <div>
+          <label class="form-label">Serving Label</label>
+          <input class="form-input" id="recNotes" placeholder="e.g. 1 chella"/>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin:-6px 0 14px;line-height:1.5">Enter nutrients for the <strong style="color:var(--text2)">whole recipe</strong>. The app divides by servings automatically.</p>
+
+      <!-- Mini tab switcher inside Add Recipe modal -->
+      <div class="tab-switcher" style="margin-bottom:12px">
+        <button class="tab-sw-btn active" id="recTab-nutrients" onclick="switchRecTab('nutrients')">🔬 Nutrients</button>
+        <button class="tab-sw-btn" id="recTab-ingredients" onclick="switchRecTab('ingredients')">🥕 Ingredients</button>
+        <button class="tab-sw-btn" id="recTab-steps" onclick="switchRecTab('steps')">👨‍🍳 Steps</button>
+      </div>
+
+      <!-- Nutrients panel -->
+      <div id="recPanel-nutrients">
+        <div class="nutrient-grid" id="recNutrientFields"></div>
+      </div>
+
+      <!-- Ingredients panel -->
+      <div id="recPanel-ingredients" style="display:none">
+        <div class="ingredient-list" id="recIngList"></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <input class="form-input" id="recIngName" placeholder="Ingredient name (e.g. Soji)"/>
+          <div style="display:flex;gap:6px">
+            <input class="form-input" type="number" id="recIngQty" placeholder="Amount" min="0" step="0.25" style="flex:1"/>
+            <select class="form-input" id="recIngUnit" style="flex:1;cursor:pointer">
+              <optgroup label="Weight">
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="oz">oz</option>
+                <option value="lb">lb</option>
+              </optgroup>
+              <optgroup label="Volume">
+                <option value="ml">ml</option>
+                <option value="l">L</option>
+                <option value="cup">cup</option>
+                <option value="tbsp">tbsp</option>
+                <option value="tsp">tsp</option>
+              </optgroup>
+              <optgroup label="Count">
+                <option value="piece">piece</option>
+                <option value="slice">slice</option>
+                <option value="whole">whole</option>
+                <option value="pinch">pinch</option>
+              </optgroup>
+            </select>
+            <button class="add-ing-btn" onclick="addRecIngredient()">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Steps panel -->
+      <div id="recPanel-steps" style="display:none">
+        <div class="steps-list" id="recStepsList"></div>
+        <div class="add-step-row">
+          <textarea id="recStepText" placeholder="Describe this step…"></textarea>
+          <button class="add-ing-btn" onclick="addRecStep()">+</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" style="margin-top:14px" onclick="saveRecipe()">Save Recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- RECIPE DETAIL / EDIT MODAL -->
+<div class="modal-overlay" id="recipeDetailModal">
+  <div class="modal" style="max-height:96dvh">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="rdTitle">Recipe</div>
+      <button class="modal-close" onclick="closeModal('recipeDetailModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Header with icon + name + notes -->
+      <div class="recipe-detail-header">
+        <div class="recipe-detail-icon" id="rdIcon">🍽️</div>
+        <div class="recipe-detail-meta">
+          <div class="recipe-detail-name" id="rdName"></div>
+          <div class="recipe-detail-notes" id="rdNotes"></div>
+        </div>
+        <button class="recipe-btn recipe-btn-log" style="height:36px" onclick="logFromDetailModal()">Log Now</button>
+      </div>
+
+      <!-- Nutrient summary strip -->
+      <div class="nutrient-summary-grid" id="rdNutrientSummary"></div>
+
+      <!-- Sub-tabs: Ingredients / Steps / Nutrients -->
+      <div class="tab-switcher">
+        <button class="tab-sw-btn active" id="rdTab-ingredients" onclick="switchRdTab('ingredients')">🥕 Ingredients</button>
+        <button class="tab-sw-btn" id="rdTab-steps" onclick="switchRdTab('steps')">👨‍🍳 Steps</button>
+        <button class="tab-sw-btn" id="rdTab-nutrients" onclick="switchRdTab('nutrients')">🔬 Nutrients</button>
+        <button class="tab-sw-btn" id="rdTab-edit" onclick="switchRdTab('edit')">✏️ Edit Info</button>
+      </div>
+
+      <!-- Ingredients panel -->
+      <div id="rdPanel-ingredients">
+        <!-- Linked ingredients (with gram amounts for auto-calculation) -->
+        <div style="font-size:10px;font-weight:600;color:var(--accent3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">🔗 Linked (auto-calculate)</div>
+        <div id="rdLinkedList" style="margin-bottom:10px"></div>
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <input class="form-input" id="rdLinkSearch" placeholder="Search foods to link…" oninput="renderRdLinkSearch()" style="flex:1"/>
+        </div>
+        <div id="rdLinkResults" style="max-height:120px;overflow-y:auto;margin-bottom:12px"></div>
+        <button class="btn btn-primary" style="margin-bottom:14px" onclick="recalcFromLinked()">⚡ Recalculate Nutrients from Linked</button>
+        <!-- Plain text ingredients (for display/steps reference) -->
+        <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📋 All Ingredients (display)</div>
+        <div class="ingredient-list" id="rdIngredientList"></div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <input class="form-input" id="rdIngName" placeholder="Ingredient name (e.g. Soji)"/>
+          <div style="display:flex;gap:6px">
+            <input class="form-input" type="number" id="rdIngQty" placeholder="Amount" min="0" step="0.25" style="flex:1"/>
+            <select class="form-input" id="rdIngUnit" style="flex:1;cursor:pointer">
+              <optgroup label="Weight">
+                <option value="g">g</option>
+                <option value="kg">kg</option>
+                <option value="oz">oz</option>
+                <option value="lb">lb</option>
+              </optgroup>
+              <optgroup label="Volume">
+                <option value="ml">ml</option>
+                <option value="l">L</option>
+                <option value="cup">cup</option>
+                <option value="tbsp">tbsp</option>
+                <option value="tsp">tsp</option>
+              </optgroup>
+              <optgroup label="Count">
+                <option value="piece">piece</option>
+                <option value="slice">slice</option>
+                <option value="whole">whole</option>
+                <option value="pinch">pinch</option>
+              </optgroup>
+            </select>
+            <button class="add-ing-btn" onclick="addIngredient()">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Steps panel -->
+      <div id="rdPanel-steps" style="display:none">
+        <div class="steps-list" id="rdStepsList"></div>
+        <div class="add-step-row">
+          <textarea id="rdStepText" placeholder="Describe this step…"></textarea>
+          <button class="add-ing-btn" onclick="addStep()">+</button>
+        </div>
+      </div>
+
+      <!-- Full nutrients panel -->
+      <div id="rdPanel-nutrients" style="display:none">
+        <div class="nutrient-grid" id="rdNutrientFields"></div>
+        <button class="btn btn-primary" style="margin-top:12px" onclick="saveNutrientsFromDetail()">Save Nutrients</button>
+      </div>
+
+      <!-- Edit info panel -->
+      <div id="rdPanel-edit" style="display:none">
+        <div class="form-section">
+          <label class="form-label">Recipe Name</label>
+          <input class="form-input" id="rdEditName" placeholder="Recipe name"/>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+          <div>
+            <label class="form-label">Total Servings</label>
+            <input class="form-input" type="number" id="rdEditServings" placeholder="1" min="0.25" step="0.25"/>
+          </div>
+          <div>
+            <label class="form-label">Serving Label</label>
+            <input class="form-input" id="rdEditNotes" placeholder="e.g. 1 chella"/>
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="form-label">Icon</label>
+          <div class="emoji-picker" id="emojiPickerDetail"></div>
+        </div>
+        <button class="btn btn-primary" onclick="saveRecipeInfo()">Save Changes</button>
+        <button class="btn btn-secondary" style="margin-top:8px" onclick="deleteCurrentRecipe()">🗑 Delete Recipe</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SERVINGS LOG MODAL -->
+<div class="modal-overlay" id="servingsModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="svTitle">Log Serving</div>
+      <button class="modal-close" onclick="closeModal('servingsModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="font-size:32px" id="svIcon">🍽️</div>
+        <div>
+          <div style="font-size:15px;font-weight:500" id="svName"></div>
+          <div style="font-size:12px;color:var(--text3)" id="svInfo"></div>
+        </div>
+      </div>
+
+      <div class="servings-row">
+        <div>
+          <div class="servings-row-label">How many servings?</div>
+          <div class="servings-row-sub" id="svCalPerServing"></div>
+        </div>
+        <div class="servings-stepper">
+          <button class="step-btn" onclick="changeServings(-0.5)">−</button>
+          <input class="step-val" type="number" id="svCount" value="1" min="0.25" step="0.25" oninput="updateServingsPreview()"/>
+          <button class="step-btn" onclick="changeServings(0.5)">+</button>
+        </div>
+      </div>
+
+      <!-- Nutrient preview -->
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Will be logged</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px" id="svNutrientPreview"></div>
+      </div>
+
+      <div class="form-section">
+        <label class="form-label">Meal Time</label>
+        <input class="form-input" type="time" id="svTime"/>
+      </div>
+
+      <button class="btn btn-primary" onclick="confirmServingsLog()">Log Meal</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────
+
+const EMOJIS = ['🫓','🥗','🍛','🍲','🥛','🥩','🍳','🥚','🍌','🍎','🥑','🥜','🍚','🫘','🥦','🥕','🍵','☕','🧃','🍫'];
+
+const NUTRIENTS = [
+  { key:'calories',  label:'Calories',     unit:'kcal', color:'#5a9e5a' },
+  { key:'carbs',     label:'Carbs',        unit:'g',    color:'#6db86d' },
+  { key:'protein',   label:'Protein',      unit:'g',    color:'#c9a84c' },
+  { key:'fat',       label:'Fat',          unit:'g',    color:'#7a9ec9' },
+  { key:'fiber',     label:'Fiber',        unit:'g',    color:'#c97a9e' },
+  { key:'sugar',     label:'Sugar',        unit:'g',    color:'#c9906a' },
+  { key:'satFat',    label:'Sat. Fat',     unit:'g',    color:'#9a6ac9' },
+  { key:'sodium',    label:'Sodium',       unit:'mg',   color:'#c96a6a' },
+  { key:'calcium',   label:'Calcium',      unit:'mg',   color:'#6ac9b8' },
+  { key:'iron',      label:'Iron',         unit:'mg',   color:'#c9b86a' },
+  { key:'potassium', label:'Potassium',    unit:'mg',   color:'#8ac96a' },
+  { key:'vitC',      label:'Vitamin C',    unit:'mg',   color:'#f0a030' },
+  { key:'vitD',      label:'Vitamin D',    unit:'IU',   color:'#f0d030' },
+  { key:'vitB12',    label:'Vitamin B12',  unit:'mcg',  color:'#a0d0f0' },
+  { key:'vitA',      label:'Vitamin A',    unit:'mcg',  color:'#f0a0a0' },
+  { key:'vitB6',     label:'Vitamin B6',   unit:'mg',   color:'#f0c060' },
+  { key:'folate',    label:'Folate (B9)',  unit:'mcg',  color:'#a0f0c0' },
+  { key:'magnesium', label:'Magnesium',    unit:'mg',   color:'#80c0e0' },
+  { key:'zinc',      label:'Zinc',         unit:'mg',   color:'#d0a0e0' },
+];
+
+const MICRO_NUTRIENTS = ['sodium','calcium','iron','magnesium','zinc','potassium','vitC','vitD','vitB6','vitB12','vitA','folate'];
+
+const DEFAULT_GOALS = {
+  calories: 2550, carbs: 335, protein: 81, fat: 78,
+  fiber: 38, sugar: 50, satFat: 20, sodium: 2300,
+  calcium: 1000, iron: 8, potassium: 3500,
+  vitC: 90, vitD: 600, vitB12: 2.4, vitA: 900,
+  vitB6: 1.3, folate: 400, magnesium: 400, zinc: 11
+};
+
+// No preloaded recipes — user adds their own
+const PRELOADED_RECIPES = [];
+
+// ── Unit → gram conversion using per-ingredient user-defined measurements ─
+
+function toGrams(qty, unit, ingId) {
+  if (unit === 'g') return qty;
+  const ing = state.ingredients.find(x => x.id === ingId);
+  if (ing && ing.measurements) {
+    const m = ing.measurements.find(x => x.unit === unit);
+    if (m) return qty * m.grams;
+  }
+  return qty; // fallback — treat qty as grams if no definition found
+}
+
+function unitSelectHTML(selected, ingId) {
+  const ing = state.ingredients.find(x => x.id === ingId);
+  const custom = (ing && ing.measurements) ? ing.measurements : [];
+  let opts = '<option value="g"' + (selected === 'g' ? ' selected' : '') + '>g</option>';
+  if (custom.length) {
+    opts += '<optgroup label="Custom">' +
+      custom.map(m =>
+        '<option value="' + m.unit + '"' + (m.unit === selected ? ' selected' : '') + '>' +
+        m.unit + ' (' + m.grams + 'g)</option>'
+      ).join('') + '</optgroup>';
+  }
+  return '<select class="linked-row-unit" onchange="updateLinkedUnit(this)">' + opts + '</select>';
+}
+
+// No preloaded ingredients — user adds their own
+const PRELOADED_INGREDIENTS = [];
+
+let state = {
+  logs: [],
+  recipes: [],
+  ingredients: [],
+  goals: { ...DEFAULT_GOALS },
+  selectedEmoji: '🍽️',
+  selectedEmojiRec: '🍽️',
+  selectedEmojiIng: '🥕',
+  selectedEmojiRB: '🍽️',
+  currentTab: 'today',
+  editingIngId: null
+};
+
+// ── Storage ───────────────────────────────────────────────────────────────
+
+function save() {
+  localStorage.setItem('nt_logs', JSON.stringify(state.logs));
+  localStorage.setItem('nt_recipes', JSON.stringify(state.recipes));
+  localStorage.setItem('nt_goals', JSON.stringify(state.goals));
+  localStorage.setItem('nt_ingredients', JSON.stringify(state.ingredients));
+}
+
+function load() {
+  try {
+    const logs = localStorage.getItem('nt_logs');
+    const recipes = localStorage.getItem('nt_recipes');
+    const goals = localStorage.getItem('nt_goals');
+    const ings = localStorage.getItem('nt_ingredients');
+    if (logs) state.logs = JSON.parse(logs);
+    if (recipes) state.recipes = JSON.parse(recipes);
+    else state.recipes = [...PRELOADED_RECIPES];
+    if (goals) state.goals = { ...DEFAULT_GOALS, ...JSON.parse(goals) };
+    if (ings) state.ingredients = JSON.parse(ings);
+    else state.ingredients = [...PRELOADED_INGREDIENTS];
+  } catch(e) {
+    state.recipes = [...PRELOADED_RECIPES];
+    state.ingredients = [...PRELOADED_INGREDIENTS];
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function todayKey() { return new Date().toISOString().slice(0,10); }
+
+function getTodayLogs() {
+  return state.logs.filter(l => l.date === todayKey());
+}
+
+function sumNutrients(logs) {
+  const sum = {};
+  NUTRIENTS.forEach(n => sum[n.key] = 0);
+  logs.forEach(l => {
+    NUTRIENTS.forEach(n => { sum[n.key] += (l.nutrients[n.key] || 0); });
+  });
+  return sum;
+}
+
+function fmt(val, decimals=0) {
+  if (val === undefined || val === null || isNaN(val)) return '0';
+  return Number(val).toFixed(decimals).replace(/\.0$/, '');
+}
+
+function pct(val, goal) {
+  if (!goal) return 0;
+  return Math.min(100, Math.round((val / goal) * 100));
+}
+
+function dateLabel(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+  if (d.getTime() === today.getTime()) return 'Today';
+  if (d.getTime() === yesterday.getTime()) return 'Yesterday';
+  return d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Tab Switching ─────────────────────────────────────────────────────────
+
+function switchTab(tab) {
+  state.currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('page-' + tab).classList.add('active');
+  render();
+}
+
+// ── Render Today ──────────────────────────────────────────────────────────
+
+function renderToday() {
+  const logs = getTodayLogs();
+  const totals = sumNutrients(logs);
+  const g = state.goals;
+
+  // Date
+  document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+
+  // Ring
+  const calPct = pct(totals.calories, g.calories);
+  const circumference = 232.5;
+  const offset = circumference - (circumference * calPct / 100);
+  document.getElementById('ringFill').style.strokeDashoffset = offset;
+  document.getElementById('ringFill').style.stroke = calPct > 100 ? '#c96a6a' : '#6db86d';
+  document.getElementById('ringPct').textContent = calPct + '%';
+  document.getElementById('todayCal').textContent = fmt(totals.calories);
+  const remain = g.calories - totals.calories;
+  document.getElementById('todayRemain').innerHTML = remain > 0
+    ? `<strong>${fmt(remain)} kcal</strong> remaining today`
+    : `<strong style="color:var(--danger)">${fmt(-remain)} kcal</strong> over goal`;
+
+  // Macros
+  document.getElementById('mCarbs').textContent = fmt(totals.carbs);
+  document.getElementById('mProtein').textContent = fmt(totals.protein);
+  document.getElementById('mFat').textContent = fmt(totals.fat);
+  document.getElementById('mFiber').textContent = fmt(totals.fiber);
+  document.getElementById('mSugar').textContent = fmt(totals.sugar);
+  document.getElementById('mSatFat').textContent = fmt(totals.satFat, 1);
+  document.getElementById('bCarbs').style.width = pct(totals.carbs, g.carbs) + '%';
+  document.getElementById('bProtein').style.width = pct(totals.protein, g.protein) + '%';
+  document.getElementById('bFat').style.width = pct(totals.fat, g.fat) + '%';
+  document.getElementById('bFiber').style.width = pct(totals.fiber, g.fiber) + '%';
+  document.getElementById('bSugar').style.width = pct(totals.sugar, g.sugar) + '%';
+  document.getElementById('bSatFat').style.width = pct(totals.satFat, g.satFat) + '%';
+
+  // Micros
+  const microEl = document.getElementById('microGrid');
+  microEl.innerHTML = MICRO_NUTRIENTS.map(key => {
+    const n = NUTRIENTS.find(x => x.key === key);
+    const val = totals[key] || 0;
+    const goal = g[key] || 1;
+    const p = pct(val, goal);
+    const cls = p > 110 ? 'danger' : p > 85 ? 'warn' : '';
+    return `<div class="micro-row">
+      <span class="micro-name">${n.label}</span>
+      <div class="micro-bar-wrap"><div class="micro-bar ${cls}" style="width:${p}%;background:${cls ? '' : n.color}"></div></div>
+      <span class="micro-val">${fmt(val,1)} / ${fmt(goal,0)}${n.unit}</span>
+    </div>`;
+  }).join('');
+
+  // Today's entries
+  const entriesEl = document.getElementById('todayEntries');
+  if (logs.length === 0) {
+    entriesEl.innerHTML = `<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:13px">No meals logged today yet</div>`;
+  } else {
+    entriesEl.innerHTML = logs.slice().reverse().map(l => `
+      <div class="log-item animate-in">
+        <div class="log-item-icon">${l.icon}</div>
+        <div class="log-item-info">
+          <div class="log-item-name">${l.name}</div>
+          <div class="log-item-sub">${l.time} · P:${fmt(l.nutrients.protein)}g C:${fmt(l.nutrients.carbs)}g F:${fmt(l.nutrients.fat)}g</div>
+        </div>
+        <div class="log-item-cal">${fmt(l.nutrients.calories)}</div>
+        <button class="log-item-del" onclick="deleteLog('${l.id}')">×</button>
+      </div>`).join('');
+  }
+
+  // 7-day history
+  const histEl = document.getElementById('historyBars');
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0,10);
+    const dayLogs = state.logs.filter(l => l.date === key);
+    const cal = sumNutrients(dayLogs).calories;
+    days.push({ key, label: i === 0 ? 'Today' : d.toLocaleDateString('en-US',{weekday:'short'}), cal });
+  }
+  const maxCal = Math.max(...days.map(d => d.cal), state.goals.calories);
+  histEl.innerHTML = days.map(d => {
+    const w = Math.round((d.cal / maxCal) * 100);
+    const over = d.cal > state.goals.calories;
+    return `<div class="history-day">
+      <div class="history-day-label"><span>${d.label}</span><span>${fmt(d.cal)} kcal</span></div>
+      <div class="history-bar-wrap"><div class="history-bar ${over?'over':''}" style="width:${w}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render Log ────────────────────────────────────────────────────────────
+
+function renderLog() {
+  const logEl = document.getElementById('logList');
+  if (state.logs.length === 0) {
+    logEl.innerHTML = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-title">No meals logged yet</div><div class="empty-sub">Tap + to log your first meal</div></div>`;
+    return;
+  }
+  // Group by date
+  const grouped = {};
+  [...state.logs].reverse().forEach(l => {
+    if (!grouped[l.date]) grouped[l.date] = [];
+    grouped[l.date].push(l);
+  });
+  logEl.innerHTML = Object.entries(grouped).map(([date, logs]) => {
+    const totals = sumNutrients(logs);
+    return `<div class="log-date-header">${dateLabel(date)} · ${fmt(totals.calories)} kcal</div>
+    ${logs.map(l => `
+      <div class="log-item">
+        <div class="log-item-icon">${l.icon}</div>
+        <div class="log-item-info">
+          <div class="log-item-name">${l.name}</div>
+          <div class="log-item-sub">${l.time} · P:${fmt(l.nutrients.protein)}g C:${fmt(l.nutrients.carbs)}g F:${fmt(l.nutrients.fat)}g Na:${fmt(l.nutrients.sodium)}mg</div>
+        </div>
+        <div class="log-item-cal">${fmt(l.nutrients.calories)}</div>
+        <button class="log-item-del" onclick="deleteLog('${l.id}')">×</button>
+      </div>`).join('')}`;
+  }).join('');
+}
+
+// ── Render Recipes ────────────────────────────────────────────────────────
+
+function renderRecipes() {
+  const el = document.getElementById('recipeList');
+  if (state.recipes.length === 0) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🍳</div><div class="empty-title">No recipes saved</div><div class="empty-sub">Tap + to add your first recipe</div></div>`;
+    return;
+  }
+  el.innerHTML = state.recipes.map(r => `
+    <div class="recipe-item" onclick="openRecipeDetail('${r.id}')">
+      <div class="recipe-icon">${r.icon}</div>
+      <div class="recipe-info">
+        <div class="recipe-name">${r.name}</div>
+        <div class="recipe-cal">${r.totalServings > 1 ? fmt(r.nutrients.calories / r.totalServings) + ' kcal/serving · ' + r.totalServings + ' servings' : fmt(r.nutrients.calories) + ' kcal · ' + (r.notes || 'tap to view & edit')}</div>
+        <div class="recipe-macros">P:${fmt(r.nutrients.protein)}g  C:${fmt(r.nutrients.carbs)}g  F:${fmt(r.nutrients.fat)}g  Na:${fmt(r.nutrients.sodium)}mg</div>
+      </div>
+      <div class="recipe-actions" onclick="event.stopPropagation()">
+        <button class="recipe-btn recipe-btn-log" onclick="openServingsLog('${r.id}')">Log</button>
+        <button class="recipe-btn recipe-btn-del" onclick="openRecipeDetail('${r.id}')">✏️</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── Render Goals ──────────────────────────────────────────────────────────
+
+function renderGoals() {
+  const el = document.getElementById('goalFields');
+  el.innerHTML = NUTRIENTS.map(n => `
+    <div class="goal-item">
+      <span class="goal-name">${n.label}</span>
+      <input class="goal-input" type="number" id="goal-${n.key}" value="${state.goals[n.key] || 0}" step="${n.unit==='mcg'?'0.1':'1'}"/>
+      <span class="goal-unit">${n.unit}</span>
+    </div>`).join('');
+}
+
+function saveGoals() {
+  NUTRIENTS.forEach(n => {
+    const v = parseFloat(document.getElementById('goal-' + n.key)?.value || 0);
+    state.goals[n.key] = v;
+  });
+  save();
+  showToast('✅ Goals saved!');
+  render();
+}
+
+function calcGoals() {
+  const age = parseInt(document.getElementById('prof-age')?.value || 27);
+  const weight = parseFloat(document.getElementById('prof-weight')?.value || 90);
+  const height = parseFloat(document.getElementById('prof-height')?.value || 181);
+  // Mifflin-St Jeor for male, sedentary
+  const bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+  const tdee = Math.round(bmr * 1.2);
+  state.goals.calories = tdee;
+  state.goals.protein = Math.round(weight * 0.9);
+  state.goals.carbs = Math.round(tdee * 0.45 / 4);
+  state.goals.fat = Math.round(tdee * 0.3 / 9);
+  state.goals.fiber = 38;
+  state.goals.sodium = 2300;
+  state.goals.calcium = 1000;
+  state.goals.iron = 8;
+  state.goals.potassium = 3500;
+  state.goals.vitC = 90; state.goals.vitD = 600;
+  state.goals.vitB12 = 2.4; state.goals.vitA = 900;
+  save();
+  renderGoals();
+  showToast(`🎯 Goals calculated! ${tdee} kcal/day`);
+}
+
+// ── Emoji Pickers ─────────────────────────────────────────────────────────
+
+function buildEmojiPicker(containerId, stateKey) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = EMOJIS.map(e => `
+    <button class="emoji-btn ${state[stateKey]===e?'selected':''}" onclick="selectEmoji('${e}','${stateKey}','${containerId}')">${e}</button>
+  `).join('');
+}
+
+function selectEmoji(emoji, stateKey, containerId) {
+  state[stateKey] = emoji;
+  buildEmojiPicker(containerId, stateKey);
+}
+
+// ── Nutrient Fields ───────────────────────────────────────────────────────
+
+function buildNutrientFields(containerId, prefill) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = NUTRIENTS.map(n => `
+    <div class="nutrient-field">
+      <span class="nutrient-label">${n.label}</span>
+      <div class="nutrient-input-wrap">
+        <input class="nutrient-input" type="number" id="${containerId}-${n.key}" placeholder="0" step="${n.unit==='mcg'?'0.1':'1'}" value="${prefill && prefill[n.key] ? prefill[n.key] : ''}"/>
+        <span class="nutrient-unit">${n.unit}</span>
+      </div>
+    </div>`).join('');
+}
+
+function getNutrientValues(containerId) {
+  const vals = {};
+  NUTRIENTS.forEach(n => {
+    const v = parseFloat(document.getElementById(containerId + '-' + n.key)?.value || 0);
+    vals[n.key] = isNaN(v) ? 0 : v;
+  });
+  return vals;
+}
+
+// ── Modal ─────────────────────────────────────────────────────────────────
+
+function openAddModal() {
+  // Quick recipes list
+  const qEl = document.getElementById('quickRecipes');
+  if (state.recipes.length > 0) {
+    qEl.innerHTML = `<div class="form-label" style="margin-bottom:6px">QUICK LOG FROM SAVED</div>
+    <div class="quick-recipe-list">
+      ${state.recipes.map(r => `
+        <button class="quick-recipe-btn" onclick="openServingsLog('${r.id}')">
+          <span class="qr-icon">${r.icon}</span>
+          <div class="qr-info">
+            <div class="qr-name">${r.name}</div>
+            <div class="qr-cal">${r.totalServings > 1 ? fmt(r.nutrients.calories / r.totalServings) : fmt(r.nutrients.calories)} kcal · ${r.totalServings > 1 ? 'per serving · ' + r.totalServings + ' servings' : (r.notes||'1 serving')}</div>
+          </div>
+        </button>`).join('')}
+    </div>`;
+  } else {
+    qEl.innerHTML = '';
+  }
+
+  // Time
+  const now = new Date();
+  document.getElementById('addTime').value = now.toTimeString().slice(0,5);
+
+  // Fields
+  state.selectedEmoji = '🍽️';
+  buildEmojiPicker('emojiPicker', 'selectedEmoji');
+  buildNutrientFields('nutrientFields', null);
+  document.getElementById('addName').value = '';
+  document.getElementById('addModal').classList.add('open');
+}
+
+// Temp storage for new recipe being built
+let newRecIngredients = [];
+let newRecSteps = [];
+let recCurrentTab = 'nutrients';
+
+function switchRecTab(tab) {
+  recCurrentTab = tab;
+  ['nutrients','ingredients','steps'].forEach(t => {
+    document.getElementById('recTab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('recPanel-' + t).style.display = t === tab ? '' : 'none';
+  });
+  if (tab === 'ingredients') renderNewRecIngredients();
+  if (tab === 'steps') renderNewRecSteps();
+}
+
+function renderNewRecIngredients() {
+  const el = document.getElementById('recIngList');
+  if (!newRecIngredients.length) {
+    el.innerHTML = `<div style="text-align:center;padding:12px 0;color:var(--text3);font-size:13px">No ingredients yet</div>`;
+    return;
+  }
+  el.innerHTML = newRecIngredients.map((ing, i) => `
+    <div class="ingredient-row">
+      <span class="ingredient-row-name">${ing.name}</span>
+      <span class="ingredient-row-amount">${ing.amount}</span>
+      <button class="ingredient-row-del" onclick="delNewRecIng(${i})">×</button>
+    </div>`).join('');
+}
+
+function renderNewRecSteps() {
+  const el = document.getElementById('recStepsList');
+  if (!newRecSteps.length) {
+    el.innerHTML = `<div style="text-align:center;padding:12px 0;color:var(--text3);font-size:13px">No steps yet</div>`;
+    return;
+  }
+  el.innerHTML = newRecSteps.map((step, i) => `
+    <div class="step-row">
+      <div class="step-num">${i+1}</div>
+      <textarea class="step-text" rows="2" onchange="newRecSteps[${i}]=this.value">${step}</textarea>
+      <button class="step-del" onclick="delNewRecStep(${i})">×</button>
+    </div>`).join('');
+}
+
+function addRecIngredient() {
+  const name = document.getElementById('recIngName').value.trim();
+  const qty   = document.getElementById('recIngQty').value.trim();
+  const unit  = document.getElementById('recIngUnit').value;
+  if (!name) { showToast('⚠️ Enter ingredient name'); return; }
+  const amount = qty ? qty + ' ' + unit : '';
+  newRecIngredients.push({ name, amount });
+  document.getElementById('recIngName').value = '';
+  document.getElementById('recIngQty').value = '';
+  document.getElementById('recIngUnit').value = 'g';
+  renderNewRecIngredients();
+}
+
+function delNewRecIng(i) { newRecIngredients.splice(i,1); renderNewRecIngredients(); }
+
+function addRecStep() {
+  const text = document.getElementById('recStepText').value.trim();
+  if (!text) { showToast('⚠️ Enter step description'); return; }
+  newRecSteps.push(text);
+  document.getElementById('recStepText').value = '';
+  renderNewRecSteps();
+}
+
+function delNewRecStep(i) { newRecSteps.splice(i,1); renderNewRecSteps(); }
+
+function openRecipeModal() {
+  newRecIngredients = [];
+  newRecSteps = [];
+  recCurrentTab = 'nutrients';
+  state.selectedEmojiRec = '🍳';
+  buildEmojiPicker('emojiPickerRec', 'selectedEmojiRec');
+  buildNutrientFields('recNutrientFields', null);
+  document.getElementById('recName').value = '';
+  document.getElementById('recNotes').value = '';
+  // Reset tabs
+  ['nutrients','ingredients','steps'].forEach(t => {
+    document.getElementById('recTab-' + t)?.classList.toggle('active', t === 'nutrients');
+    const p = document.getElementById('recPanel-' + t);
+    if (p) p.style.display = t === 'nutrients' ? '' : 'none';
+  });
+  document.getElementById('recipeModal').classList.add('open');
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Logging ───────────────────────────────────────────────────────────────
+
+function logMeal() {
+  const name = document.getElementById('addName').value.trim();
+  if (!name) { showToast('⚠️ Please enter a meal name'); return; }
+  const nutrients = getNutrientValues('nutrientFields');
+  const time = document.getElementById('addTime').value || new Date().toTimeString().slice(0,5);
+  const entry = {
+    id: Date.now().toString(),
+    name, icon: state.selectedEmoji,
+    time, date: todayKey(), nutrients
+  };
+  state.logs.push(entry);
+  save(); closeModal('addModal');
+  showToast('✅ ' + name + ' logged!');
+  render();
+}
+
+function saveAndLogMeal() {
+  const name = document.getElementById('addName').value.trim();
+  if (!name) { showToast('⚠️ Please enter a meal name'); return; }
+  const nutrients = getNutrientValues('nutrientFields');
+  const time = document.getElementById('addTime').value || new Date().toTimeString().slice(0,5);
+  // Save recipe
+  const recipe = { id: Date.now().toString(), name, icon: state.selectedEmoji, nutrients, notes: '' };
+  state.recipes.push(recipe);
+  // Log entry
+  const entry = { id: (Date.now()+1).toString(), name, icon: state.selectedEmoji, time, date: todayKey(), nutrients };
+  state.logs.push(entry);
+  save(); closeModal('addModal');
+  showToast('💾 Saved & logged ' + name);
+  render();
+}
+
+let svCurrentId = null;
+
+function openServingsLog(id, fromDetail) {
+  const recipe = state.recipes.find(r => r.id === id);
+  if (!recipe) return;
+  svCurrentId = id;
+  const sv = recipe.totalServings || 1;
+  document.getElementById('svTitle').textContent = 'Log ' + recipe.name;
+  document.getElementById('svIcon').textContent = recipe.icon;
+  document.getElementById('svName').textContent = recipe.name;
+  document.getElementById('svInfo').textContent = sv > 1
+    ? sv + ' servings total · ' + fmt(recipe.nutrients.calories / sv) + ' kcal each'
+    : (recipe.notes || '1 serving · ' + fmt(recipe.nutrients.calories) + ' kcal');
+  document.getElementById('svCount').value = 1;
+  document.getElementById('svTime').value = new Date().toTimeString().slice(0,5);
+  updateServingsPreview();
+  document.getElementById('servingsModal').classList.add('open');
+  if (fromDetail) closeModal('recipeDetailModal');
+}
+
+function changeServings(delta) {
+  const el = document.getElementById('svCount');
+  const val = Math.max(0.25, Math.round((parseFloat(el.value) + delta) * 4) / 4);
+  el.value = val;
+  updateServingsPreview();
+}
+
+function updateServingsPreview() {
+  const recipe = state.recipes.find(r => r.id === svCurrentId);
+  if (!recipe) return;
+  const sv = recipe.totalServings || 1;
+  const count = parseFloat(document.getElementById('svCount').value) || 1;
+  const perSv = count / sv; // fraction of whole recipe
+  const preview = ['calories','protein','carbs','fat','fiber','sodium'];
+  const previewLabels = ['Calories','Protein','Carbs','Fat','Fiber','Sodium'];
+  const previewUnits = ['kcal','g','g','g','g','mg'];
+  document.getElementById('svCalPerServing').textContent =
+    fmt((recipe.nutrients.calories || 0) * perSv) + ' kcal total';
+  document.getElementById('svNutrientPreview').innerHTML = preview.map((k,i) => `
+    <div style="text-align:center;background:var(--card);border-radius:6px;padding:6px 4px">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">${fmt((recipe.nutrients[k]||0) * perSv, k==='vitB12'?1:0)}</div>
+      <div style="font-size:9px;color:var(--text3)">${previewLabels[i]} ${previewUnits[i]}</div>
+    </div>`).join('');
+}
+
+function confirmServingsLog() {
+  const recipe = state.recipes.find(r => r.id === svCurrentId);
+  if (!recipe) return;
+  const sv = recipe.totalServings || 1;
+  const count = parseFloat(document.getElementById('svCount').value) || 1;
+  const fraction = count / sv;
+  const time = document.getElementById('svTime').value || new Date().toTimeString().slice(0,5);
+  const scaledNutrients = {};
+  NUTRIENTS.forEach(n => { scaledNutrients[n.key] = (recipe.nutrients[n.key] || 0) * fraction; });
+  const label = count === 1 ? (sv === 1 ? '' : '(1 serving)') : '(' + count + ' servings)';
+  const entry = {
+    id: Date.now().toString(),
+    name: recipe.name + (label ? ' ' + label : ''),
+    icon: recipe.icon, time, date: todayKey(),
+    nutrients: scaledNutrients
+  };
+  state.logs.push(entry);
+  save();
+  closeModal('servingsModal');
+  showToast('✅ ' + recipe.name + ' logged!');
+  render();
+}
+
+function logFromRecipe(id) {
+  // For quick-log from recipe card (no servings modal for single-serving recipes)
+  const recipe = state.recipes.find(r => r.id === id);
+  if (!recipe) return;
+  if ((recipe.totalServings || 1) > 1) { openServingsLog(id); return; }
+  const now = new Date();
+  const entry = {
+    id: Date.now().toString(),
+    name: recipe.name, icon: recipe.icon,
+    time: now.toTimeString().slice(0,5),
+    date: todayKey(),
+    nutrients: { ...recipe.nutrients }
+  };
+  state.logs.push(entry);
+  save();
+  showToast('✅ ' + recipe.name + ' logged!');
+  render();
+}
+
+function deleteLog(id) {
+  state.logs = state.logs.filter(l => l.id !== id);
+  save(); render();
+  showToast('🗑 Entry removed');
+}
+
+// ── Recipes ───────────────────────────────────────────────────────────────
+
+function saveRecipe() {
+  const name = document.getElementById('recName').value.trim();
+  if (!name) { showToast('⚠️ Please enter a recipe name'); return; }
+  const nutrients = getNutrientValues('recNutrientFields');
+  const notes = document.getElementById('recNotes').value.trim();
+  const totalServings = parseFloat(document.getElementById('recServings').value) || 1;
+  const recipe = {
+    id: Date.now().toString(), name,
+    icon: state.selectedEmojiRec, nutrients, notes,
+    totalServings,
+    ingredients: [...newRecIngredients],
+    steps: [...newRecSteps]
+  };
+  state.recipes.push(recipe);
+  save(); closeModal('recipeModal');
+  showToast('💾 Recipe saved!');
+  render();
+}
+
+async function deleteRecipe(id) {
+  const ok = await showConfirm('Delete Recipe', 'This cannot be undone.', 'Delete', true);
+  if (!ok) return;
+  state.recipes = state.recipes.filter(r => r.id !== id);
+  save(); render();
+  showToast('🗑 Recipe deleted');
+}
+
+// ── Recipe Detail Modal ───────────────────────────────────────────────────
+
+let rdCurrentId = null;
+let rdCurrentTab = 'ingredients';
+
+function openRecipeDetail(id) {
+  rdCurrentId = id;
+  rdCurrentTab = 'ingredients';
+  renderRecipeDetail();
+  document.getElementById('recipeDetailModal').classList.add('open');
+}
+
+function getRecipe() { return state.recipes.find(r => r.id === rdCurrentId); }
+
+function renderRecipeDetail() {
+  const r = getRecipe(); if (!r) return;
+
+  // Ensure arrays exist
+  if (!r.ingredients) r.ingredients = [];
+  if (!r.steps) r.steps = [];
+
+  // Header
+  document.getElementById('rdTitle').textContent = r.name;
+  document.getElementById('rdIcon').textContent = r.icon;
+  document.getElementById('rdName').textContent = r.name;
+  const perServing = (r.totalServings || 1) > 1;
+  document.getElementById('rdNotes').textContent = (r.notes || '') + (perServing ? ' · ' + (r.totalServings) + ' servings' : '');
+
+  // Nutrient summary strip
+  const keys = ['calories','protein','carbs','fat','fiber','sodium'];
+  const labels = ['Calories','Protein','Carbs','Fat','Fiber','Sodium'];
+  const units = ['kcal','g','g','g','g','mg'];
+  const sv = r.totalServings || 1;
+  const svLabel = sv > 1 ? '<span class="per-serving-badge">per serving</span>' : '';
+  document.getElementById('rdNutrientSummary').innerHTML = keys.map((k,i) => `
+    <div class="ns-cell">
+      <div class="ns-val">${fmt((r.nutrients[k] || 0) / sv, k==='vitB12'?1:0)}</div>
+      <div class="ns-label">${labels[i]} <span style="font-size:8px;opacity:0.7">${units[i]}</span></div>
+    </div>`).join('') + (sv > 1 ? `<div class="ns-cell" style="grid-column:span 3;background:rgba(90,158,90,0.08);border-color:rgba(90,158,90,0.2)"><div style="font-size:11px;color:var(--accent3);text-align:center">Whole recipe: ${fmt(r.nutrients.calories||0)} kcal total · ${sv} servings</div></div>` : '');
+
+  switchRdTab(rdCurrentTab);
+}
+
+function switchRdTab(tab) {
+  rdCurrentTab = tab;
+  ['ingredients','steps','nutrients','edit'].forEach(t => {
+    document.getElementById('rdTab-' + t).classList.toggle('active', t === tab);
+    document.getElementById('rdPanel-' + t).style.display = t === tab ? '' : 'none';
+  });
+
+  const r = getRecipe(); if (!r) return;
+
+  if (tab === 'ingredients') { renderIngredients(r); renderLinked(r); renderRdLinkSearch(); }
+  if (tab === 'steps') renderSteps(r);
+  if (tab === 'nutrients') {
+    buildNutrientFields('rdNutrientFields', r.nutrients);
+  }
+  if (tab === 'edit') {
+    document.getElementById('rdEditName').value = r.name;
+    document.getElementById('rdEditNotes').value = r.notes || '';
+    document.getElementById('rdEditServings').value = r.totalServings || 1;
+    state.selectedEmojiDetail = r.icon;
+    buildEmojiPicker('emojiPickerDetail', 'selectedEmojiDetail');
+  }
+}
+
+function renderIngredients(r) {
+  const el = document.getElementById('rdIngredientList');
+  if (!r.ingredients || r.ingredients.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">No ingredients added yet</div>`;
+    return;
+  }
+  el.innerHTML = r.ingredients.map((ing, i) => `
+    <div class="ingredient-row animate-in">
+      <span class="ingredient-row-name">${ing.name}</span>
+      <span class="ingredient-row-amount">${ing.amount}</span>
+      <button class="ingredient-row-del" onclick="deleteIngredient(${i})">×</button>
+    </div>`).join('');
+}
+
+function renderSteps(r) {
+  const el = document.getElementById('rdStepsList');
+  if (!r.steps || r.steps.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:16px 0;color:var(--text3);font-size:13px">No steps added yet</div>`;
+    return;
+  }
+  el.innerHTML = r.steps.map((step, i) => `
+    <div class="step-row animate-in">
+      <div class="step-num">${i+1}</div>
+      <textarea class="step-text" rows="2" onchange="updateStep(${i}, this.value)" onblur="updateStep(${i}, this.value)">${step.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+      <button class="step-del" onclick="deleteStep(${i})">×</button>
+    </div>`).join('');
+  // Auto-resize all textareas
+  el.querySelectorAll('textarea.step-text').forEach(ta => autoResize(ta));
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function updateStep(index, value) {
+  const r = getRecipe(); if (!r) return;
+  r.steps[index] = value;
+  save();
+}
+
+function addIngredient() {
+  const name = document.getElementById('rdIngName').value.trim();
+  const qty   = document.getElementById('rdIngQty').value.trim();
+  const unit  = document.getElementById('rdIngUnit').value;
+  if (!name) { showToast('⚠️ Enter ingredient name'); return; }
+  const amount = qty ? qty + ' ' + unit : '';
+  const r = getRecipe(); if (!r) return;
+  if (!r.ingredients) r.ingredients = [];
+  r.ingredients.push({ name, amount });
+  document.getElementById('rdIngName').value = '';
+  document.getElementById('rdIngQty').value = '';
+  document.getElementById('rdIngUnit').value = 'g';
+  save(); renderIngredients(r);
+  showToast('✅ Ingredient added');
+}
+
+// ── Linked ingredients (database-connected with grams) ────────────────────
+
+function renderLinked(r) {
+  const el = document.getElementById('rdLinkedList');
+  if (!el) return;
+  const linked = r.linkedIngredients || [];
+  if (!linked.length) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:4px 0 8px">No linked foods yet — search below to link</div>`;
+    return;
+  }
+  el.innerHTML = linked.map((l, i) => {
+    const ing = state.ingredients.find(x => x.id === l.ingId);
+    const name = ing ? ing.name : l.name;
+    const icon = ing ? ing.icon : '🥕';
+    const unit = l.unit || 'g';
+    const qty  = l.qty !== undefined ? l.qty : l.grams;
+    const gramsCalc = toGrams(qty || 0, unit, l.ingId);
+    const cal  = ing ? fmt((ing.nutrients.calories || 0) * gramsCalc / 100, 0) : '?';
+    return `<div class="linked-row" data-idx="${i}">
+      <span class="linked-row-icon">${icon}</span>
+      <span class="linked-row-name" title="${name}">${name}</span>
+      <input class="linked-row-amt" type="number" value="${qty}" min="0" step="0.25"
+        oninput="updateLinkedQty(${i}, this.value)"/>
+      ${unitSelectHTML(unit, l.ingId)}
+      <button class="linked-row-del" onclick="removeLinked(${i})">×</button>
+    </div>`;
+  }).join('');
+}
+
+function renderRdLinkSearch() {
+  const q = (document.getElementById('rdLinkSearch')?.value || '').toLowerCase();
+  const el = document.getElementById('rdLinkResults');
+  if (!el) return;
+  if (!q) { el.innerHTML = ''; return; }
+  const results = state.ingredients.filter(i => i.name.toLowerCase().includes(q)).slice(0, 6);
+  if (!results.length) { el.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:4px">No foods found</div>`; return; }
+  el.innerHTML = results.map(i => `
+    <div class="link-result">
+      <span style="font-size:16px">${i.icon||'🥕'}</span>
+      <div style="flex:1">
+        <div class="link-result-name">${i.name}</div>
+        <div class="link-result-cal">${fmt(i.nutrients.calories)} kcal/100g</div>
+      </div>
+      <button class="link-add-btn" onclick="addLinkedIngredient('${i.id}')">Link</button>
+    </div>`).join('');
+}
+
+function addLinkedIngredient(ingId) {
+  const r = getRecipe(); if (!r) return;
+  const ing = state.ingredients.find(x => x.id === ingId);
+  if (!ing) return;
+  if (!r.linkedIngredients) r.linkedIngredients = [];
+  if (r.linkedIngredients.find(l => l.ingId === ingId)) {
+    showToast('Already linked — adjust grams below'); return;
+  }
+  r.linkedIngredients.push({ ingId, name: ing.name, qty: 100, unit: 'g', qty: 100, unit: 'g', grams: 100 });
+  // Also add to display ingredients if not already there
+  if (!r.ingredients) r.ingredients = [];
+  if (!r.ingredients.find(x => x.name.toLowerCase().includes(ing.name.toLowerCase().split(' ')[0]))) {
+    r.ingredients.push({ name: ing.name, amount: '100g' });
+  }
+  document.getElementById('rdLinkSearch').value = '';
+  document.getElementById('rdLinkResults').innerHTML = '';
+  save(); renderLinked(r); renderIngredients(r);
+  showToast('🔗 ' + ing.name + ' linked!');
+}
+
+function updateLinkedQty(index, val) {
+  const r = getRecipe(); if (!r) return;
+  if (!r.linkedIngredients) return;
+  const l = r.linkedIngredients[index];
+  l.qty = parseFloat(val) || 0;
+  l.grams = toGrams(l.qty, l.unit || 'g', l.ingId);
+  save();
+}
+
+function updateLinkedUnit(selectEl) {
+  // Find which row this select belongs to
+  const row = selectEl.closest('.linked-row');
+  if (!row) return;
+  const index = parseInt(row.dataset.idx);
+  const r = getRecipe(); if (!r) return;
+  if (!r.linkedIngredients) return;
+  const l = r.linkedIngredients[index];
+  l.unit = selectEl.value;
+  l.grams = toGrams(l.qty !== undefined ? l.qty : l.grams, l.unit, l.ingId);
+  save();
+}
+
+function removeLinked(index) {
+  const r = getRecipe(); if (!r) return;
+  r.linkedIngredients.splice(index, 1);
+  save(); renderLinked(r);
+}
+
+function recalcFromLinked() {
+  const r = getRecipe(); if (!r) return;
+  const linked = r.linkedIngredients || [];
+  if (!linked.length) { showToast('⚠️ No linked foods — link some above first'); return; }
+  const totals = {};
+  NUTRIENTS.forEach(n => totals[n.key] = 0);
+  let missing = [];
+  linked.forEach(l => {
+    const ing = state.ingredients.find(x => x.id === l.ingId);
+    if (!ing) { missing.push(l.name); return; }
+    const factor = l.grams / 100;
+    NUTRIENTS.forEach(n => { totals[n.key] += (ing.nutrients[n.key] || 0) * factor; });
+  });
+  r.nutrients = totals;
+  save(); renderRecipeDetail();
+  if (missing.length) {
+    showToast('⚡ Recalculated! (could not find: ' + missing.join(', ') + ')');
+  } else {
+    showToast('⚡ Nutrients recalculated from ' + linked.length + ' linked foods!');
+  }
+}
+
+function deleteIngredient(index) {
+  const r = getRecipe(); if (!r) return;
+  r.ingredients.splice(index, 1);
+  save(); renderIngredients(r);
+}
+
+function addStep() {
+  const text = document.getElementById('rdStepText').value.trim();
+  if (!text) { showToast('⚠️ Enter step description'); return; }
+  const r = getRecipe(); if (!r) return;
+  if (!r.steps) r.steps = [];
+  r.steps.push(text);
+  document.getElementById('rdStepText').value = '';
+  save(); renderSteps(r);
+  showToast('✅ Step added');
+}
+
+function deleteStep(index) {
+  const r = getRecipe(); if (!r) return;
+  r.steps.splice(index, 1);
+  save(); renderSteps(r);
+}
+
+function saveNutrientsFromDetail() {
+  const r = getRecipe(); if (!r) return;
+  r.nutrients = getNutrientValues('rdNutrientFields');
+  save();
+  renderRecipeDetail();
+  showToast('✅ Nutrients updated!');
+}
+
+function saveRecipeInfo() {
+  const r = getRecipe(); if (!r) return;
+  const newName = document.getElementById('rdEditName').value.trim();
+  if (!newName) { showToast('⚠️ Name cannot be empty'); return; }
+  r.name = newName;
+  r.notes = document.getElementById('rdEditNotes').value.trim();
+  r.totalServings = parseFloat(document.getElementById('rdEditServings').value) || 1;
+  r.icon = state.selectedEmojiDetail || r.icon;
+  save();
+  renderRecipeDetail();
+  renderRecipes();
+  showToast('✅ Recipe updated!');
+}
+
+async function deleteCurrentRecipe() {
+  const ok = await showConfirm('Delete Recipe', 'This cannot be undone.', 'Delete', true);
+  if (!ok) return;
+  state.recipes = state.recipes.filter(r => r.id !== rdCurrentId);
+  save(); closeModal('recipeDetailModal');
+  render(); showToast('🗑 Recipe deleted');
+}
+
+function logFromDetailModal() {
+  openServingsLog(rdCurrentId, true);
+}
+
+// ── Export / Import / Backup ──────────────────────────────────────────────
+
+function triggerDownload(blob, filename) {
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 2000);
+  } catch(e) {
+    // Fallback for environments where createObjectURL is blocked
+    const reader = new FileReader();
+    reader.onload = () => {
+      const a = document.createElement('a');
+      a.href = reader.result;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+    reader.readAsDataURL(blob);
+  }
+}
+
+function downloadJSON(data, filename) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  triggerDownload(blob, filename);
+}
+
+function downloadCSV(rows, filename) {
+  const escape = v => {
+    const s = String(v === null || v === undefined ? '' : v);
+    // Always quote if contains comma, quote, newline, or pipe (used as our delimiter in ingredients/steps)
+    if (s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r') || s.includes('|')) {
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    return s;
+  };
+  const csv = '\uFEFF' + rows.map(r => r.map(escape).join(',')).join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  triggerDownload(blob, filename);
+}
+
+function exportRecipesJSON() {
+  downloadJSON(state.recipes, 'nutritrack-recipes.json');
+  showToast('📥 Recipes exported as JSON');
+}
+
+function exportRecipesCSV() {
+  const nutKeys = ['calories','carbs','protein','fat','fiber','sugar','satFat','sodium','calcium','iron','potassium','vitC','vitD','vitB12','vitA','vitB6','folate','magnesium','zinc'];
+  const headers = [
+    'Name', 'Icon', 'Serving Label', 'Total Servings',
+    'Calories(kcal)', 'Carbs(g)', 'Protein(g)', 'Fat(g)', 'Fiber(g)', 'Sugar(g)', 'SatFat(g)',
+    'Sodium(mg)', 'Calcium(mg)', 'Iron(mg)', 'Potassium(mg)', 'VitC(mg)', 'VitD(IU)', 'VitB12(mcg)', 'VitA(mcg)',
+    'VitB6(mg)', 'Folate(mcg)', 'Magnesium(mg)', 'Zinc(mg)',
+    'Ingredients', 'Steps'
+  ];
+  const rows = [headers, ...state.recipes.map(r => {
+    const ings = (r.ingredients || []).map(i => i.amount ? i.name + ' — ' + i.amount : i.name).join(' | ');
+    const steps = (r.steps || []).map((s, i) => (i+1) + '. ' + s).join(' | ');
+    return [
+      r.name,
+      r.icon || '',
+      r.notes || '',
+      r.totalServings || 1,
+      ...nutKeys.map(k => r.nutrients[k] || 0),
+      ings,
+      steps
+    ];
+  })];
+  downloadCSV(rows, 'nutritrack-recipes.csv');
+  showToast('📥 Recipes exported as CSV');
+}
+
+function exportLogJSON() {
+  downloadJSON(state.logs, 'nutritrack-log.json');
+  showToast('📥 Log exported as JSON');
+}
+
+function exportLogCSV() {
+  const headers = ['Date', 'Time', 'Meal', 'Icon', 'Calories', 'Carbs(g)', 'Protein(g)', 'Fat(g)', 'Fiber(g)', 'Sugar(g)', 'SatFat(g)', 'Sodium(mg)', 'Calcium(mg)', 'Iron(mg)', 'Potassium(mg)', 'VitC(mg)', 'VitD(IU)', 'VitB12(mcg)', 'VitA(mcg)', 'VitB6(mg)', 'Folate(mcg)', 'Magnesium(mg)', 'Zinc(mg)'];
+  const rows = [headers, ...state.logs.map(l => [
+    l.date, l.time, l.name, l.icon,
+    ...['calories','carbs','protein','fat','fiber','sugar','satFat','sodium','calcium','iron','potassium','vitC','vitD','vitB12','vitA','vitB6','folate','magnesium','zinc'].map(k => (l.nutrients||{})[k] || 0)
+  ])];
+  downloadCSV(rows, 'nutritrack-log.csv');
+  showToast('📥 Log exported as CSV');
+}
+
+function exportGoalsJSON() {
+  downloadJSON({ goals: state.goals }, 'nutritrack-goals.json');
+  showToast('📥 Goals exported');
+}
+
+function exportFullBackup() {
+  const backup = {
+    version: 3,
+    exportedAt: new Date().toISOString(),
+    goals: state.goals,
+    recipes: state.recipes,
+    logs: state.logs,
+    ingredients: state.ingredients
+  };
+  downloadJSON(backup, 'nutritrack-backup-' + new Date().toISOString().slice(0,10) + '.json');
+  showToast('💾 Full backup downloaded!');
+}
+
+function importData() {
+  pickFile('filePickerCSV', (text, name) => {
+    if (name.endsWith('.csv')) {
+      importCSV(text, name);
+    } else {
+      importJSON(JSON.parse(text), name);
+    }
+  });
+}
+
+function pickFile(inputId, onload) {
+  const input = document.getElementById(inputId);
+  if (!input) { showToast('❌ File picker not ready'); return; }
+  // Reset so same file can be re-selected
+  input.value = '';
+  // Remove old listener, add fresh one
+  const handler = e => {
+    input.removeEventListener('change', handler);
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try { onload(ev.target.result, file.name); }
+      catch(err) { showToast('❌ ' + err.message); }
+    };
+    reader.readAsText(file);
+  };
+  input.addEventListener('change', handler);
+  input.click();
+}
+
+function importSpecificCSV(type) {
+  pickFile('filePickerCSV', (text) => importCSVByType(text, type));
+}
+
+function importSpecificJSON(type) {
+  pickFile('filePickerJSON', (text, name) => importJSON(JSON.parse(text), name));
+}
+
+// ── Proper RFC-4180 CSV parser ───────────────────────────────────────────
+function parseCSV(text) {
+  // Strip UTF-8 BOM if present
+  const raw = text.replace(/^\uFEFF/, '').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  const rows = [];
+  let row = [], field = '', inQuotes = false, i = 0;
+  while (i < raw.length) {
+    const ch = raw[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (raw[i+1] === '"') { field += '"'; i += 2; continue; } // escaped quote
+        inQuotes = false; i++; continue;
+      }
+      field += ch; i++; continue;
+    }
+    if (ch === '"') { inQuotes = true; i++; continue; }
+    if (ch === ',') { row.push(field.trim()); field = ''; i++; continue; }
+    if (ch === '\n') {
+      row.push(field.trim()); rows.push(row);
+      row = []; field = ''; i++; continue;
+    }
+    field += ch; i++;
+  }
+  if (field || row.length) { row.push(field.trim()); rows.push(row); }
+  return rows.filter(r => r.some(c => c !== ''));
+}
+
+function importCSVByType(text, type) {
+  const lines = parseCSV(text);
+  if (lines.length < 2) { showToast('⚠️ File appears empty'); return; }
+  if (type === 'recipes') {
+    const recipes = lines.slice(1).filter(r => r[0]).map(row => {
+      // Parse ingredients: "Name — Amount | Name — Amount"
+      const ingsRaw = row[23] || '';
+      const ingredients = ingsRaw ? ingsRaw.split(' | ').filter(Boolean).map(s => {
+        const parts = s.split(' — ');
+        return { name: parts[0].trim(), amount: (parts[1] || '').trim() };
+      }) : [];
+      // Parse steps: "1. Step text | 2. Step text"
+      const stepsRaw = row[24] || '';
+      const steps = stepsRaw ? stepsRaw.split(' | ').filter(Boolean).map(s => s.replace(/^\d+\.\s*/, '').trim()) : [];
+      return {
+        id: Date.now().toString() + Math.random(),
+        name: row[0], icon: row[1]||'🍽️', notes: row[2]||'',
+        totalServings: parseFloat(row[3])||1,
+        ingredients, steps,
+        nutrients: {
+          calories:+row[4]||0, carbs:+row[5]||0, protein:+row[6]||0,
+          fat:+row[7]||0, fiber:+row[8]||0, sugar:+row[9]||0,
+          satFat:+row[10]||0, sodium:+row[11]||0, calcium:+row[12]||0,
+          iron:+row[13]||0, potassium:+row[14]||0, vitC:+row[15]||0,
+          vitD:+row[16]||0, vitB12:+row[17]||0, vitA:+row[18]||0,
+          vitB6:+row[19]||0, folate:+row[20]||0, magnesium:+row[21]||0, zinc:+row[22]||0
+        }
+      };
+    });
+    if (!recipes.length) { showToast('⚠️ No valid rows found'); return; }
+    showChoice('Import Recipes', recipes.length + ' recipes found. Merge with existing, or replace all?', 'Merge', 'Replace All').then(choice => {
+      if (choice === 'cancel') return;
+      if (choice === 'ok') {
+        const ids = new Set(state.recipes.map(r => r.name));
+        const newOnes = recipes.filter(r => !ids.has(r.name));
+        state.recipes.push(...newOnes);
+        showToast('✅ Merged ' + newOnes.length + ' new recipes');
+      } else {
+        state.recipes = recipes;
+        showToast('✅ Replaced with ' + recipes.length + ' recipes');
+      }
+      save(); render();
+    });
+  } else if (type === 'log') {
+    const entries = lines.slice(1).filter(r => r[0]).map(row => ({
+      id: Date.now().toString() + Math.random(),
+      date: row[0], time: row[1], name: row[2], icon: row[3]||'🍽️',
+      nutrients: {
+        calories:+row[4]||0, carbs:+row[5]||0, protein:+row[6]||0,
+        fat:+row[7]||0, fiber:+row[8]||0, sugar:+row[9]||0,
+        satFat:+row[10]||0, sodium:+row[11]||0, calcium:+row[12]||0,
+        iron:+row[13]||0, potassium:+row[14]||0, vitC:+row[15]||0,
+        vitD:+row[16]||0, vitB12:+row[17]||0, vitA:+row[18]||0,
+        vitB6:+row[19]||0, folate:+row[20]||0, magnesium:+row[21]||0, zinc:+row[22]||0
+      }
+    }));
+    if (!entries.length) { showToast('⚠️ No valid rows found'); return; }
+    showConfirm('Import Log', 'Add ' + entries.length + ' log entries?', 'Import').then(ok => {
+      if (!ok) return;
+      state.logs.push(...entries);
+      save(); render();
+      showToast('✅ ' + entries.length + ' log entries imported');
+    });
+  } else if (type === 'goals') {
+    const goalMap = {};
+    lines.slice(1).forEach(row => {
+      if (row[0] && row[1] !== undefined) goalMap[row[0]] = parseFloat(row[1]);
+    });
+    if (!Object.keys(goalMap).length) { showToast('⚠️ No valid goals found'); return; }
+    showConfirm('Import Goals', 'Replace current goals with imported values?', 'Replace').then(ok => {
+      if (!ok) return;
+      state.goals = { ...DEFAULT_GOALS, ...goalMap };
+      save(); render();
+      showToast('✅ Goals imported');
+    });
+  } else if (type === 'ingredients') {
+    // Parse conversions string "1 tsp = 6g | 1 tbsp = 18g" into measurements array
+    function parseConversions(str) {
+      if (!str) return [];
+      return str.split('|').map(s => s.trim()).filter(Boolean).map(part => {
+        // Match "1 unit = Xg" or "1 unit = X g"
+        const m = part.match(/1\s+(\S+)\s*=\s*([\d.]+)\s*g/i);
+        if (!m) return null;
+        return { unit: m[1].trim(), grams: parseFloat(m[2]) };
+      }).filter(Boolean);
+    }
+    const ings = lines.slice(1).filter(r => r[0]).map(row => ({
+      id: Date.now().toString() + Math.random(),
+      name: row[0], icon: row[1] || '🥕', category: row[2] || 'other',
+      nutrients: {
+        calories:   +row[3]  || 0, carbs:      +row[4]  || 0,
+        protein:    +row[5]  || 0, fat:        +row[6]  || 0,
+        fiber:      +row[7]  || 0, sugar:      +row[8]  || 0,
+        satFat:     +row[9]  || 0, sodium:     +row[10] || 0,
+        calcium:    +row[11] || 0, iron:       +row[12] || 0,
+        potassium:  +row[13] || 0, vitC:       +row[14] || 0,
+        vitD:       +row[15] || 0, vitB12:     +row[16] || 0,
+        vitA:       +row[17] || 0, vitB6:      +row[18] || 0,
+        folate:     +row[19] || 0, magnesium:  +row[20] || 0,
+        zinc:       +row[21] || 0
+      },
+      measurements: parseConversions(row[22] || '')
+    }));
+    if (!ings.length) { showToast('⚠️ No valid rows found'); return; }
+    showChoice('Import Foods', ings.length + ' foods found. Merge or replace?', 'Merge', 'Replace All').then(choice => {
+      if (choice === 'cancel') return;
+      if (choice === 'ok') {
+        const names = new Set(state.ingredients.map(i => i.name));
+        const newOnes = ings.filter(i => !names.has(i.name));
+        state.ingredients.push(...newOnes);
+        showToast('✅ Merged ' + newOnes.length + ' foods');
+      } else {
+        state.ingredients = ings;
+        showToast('✅ Replaced with ' + ings.length + ' foods');
+      }
+      save(); renderIngredientsList();
+    });
+  }
+}
+
+function exportGoalsCSV() {
+  const rows = [['Nutrient', 'Value', 'Unit'],
+    ...NUTRIENTS.map(n => [n.key, state.goals[n.key] || 0, n.unit])
+  ];
+  downloadCSV(rows, 'nutritrack-goals.csv');
+  showToast('📥 Goals exported as CSV');
+}
+
+function importJSON(data, filename) {
+  // Full backup
+  if (data.version && data.goals && data.recipes && data.logs) {
+    showConfirm('Restore Backup', 'This will REPLACE all current data. Continue?', 'Restore', true).then(ok => {
+      if (!ok) return;
+      state.goals       = { ...DEFAULT_GOALS, ...data.goals };
+      state.recipes     = data.recipes     || [];
+      state.logs        = data.logs        || [];
+      state.ingredients = data.ingredients || [...PRELOADED_INGREDIENTS];
+      save(); render();
+      showToast('✅ Full backup restored!');
+    });
+    return;
+  }
+  // Recipes array
+  if (Array.isArray(data) && data[0]?.nutrients) {
+    showChoice('Import Recipes', data.length + ' recipes found. Merge with existing, or replace all?', 'Merge', 'Replace All').then(choice => {
+      if (choice === 'cancel') return;
+      if (choice === 'ok') {
+        const existingIds = new Set(state.recipes.map(r => r.id));
+        const newOnes = data.filter(r => !existingIds.has(r.id));
+        state.recipes.push(...newOnes);
+        showToast('✅ Merged ' + newOnes.length + ' new recipes');
+      } else {
+        state.recipes = data;
+        showToast('✅ Replaced with ' + data.length + ' recipes');
+      }
+      save(); render();
+    });
+    return;
+  }
+  // Goals
+  if (data.goals && !data.logs) {
+    state.goals = { ...DEFAULT_GOALS, ...data.goals };
+    save(); render();
+    showToast('✅ Goals imported!'); return;
+  }
+  // Log array
+  if (Array.isArray(data) && data[0]?.date) {
+    showConfirm('Import Log', 'Add ' + data.length + ' log entries to existing logs?', 'Import').then(ok => {
+      if (!ok) return;
+      const existingIds = new Set(state.logs.map(l => l.id));
+      const newOnes = data.filter(l => !existingIds.has(l.id));
+      state.logs.push(...newOnes);
+      save(); render();
+      showToast('✅ Imported ' + newOnes.length + ' log entries');
+    });
+    return;
+  }
+  showToast('⚠️ Unrecognised file format');
+}
+
+function importCSV(text, filename) {
+  const lines = text.trim().split('\n').map(l => l.split(',').map(v => v.replace(/^"|"$/g,'').replace(/""/g,'"')));
+  const headers = lines[0];
+  if (headers.includes('Meal') || headers.includes('Date')) {
+    // Log CSV
+    const entries = lines.slice(1).map(row => ({
+      id: Date.now().toString() + Math.random(),
+      date: row[0], time: row[1], name: row[2], icon: row[3] || '🍽️',
+      nutrients: {
+        calories: +row[4]||0, carbs: +row[5]||0, protein: +row[6]||0,
+        fat: +row[7]||0, fiber: +row[8]||0, sugar: +row[9]||0,
+        satFat: +row[10]||0, sodium: +row[11]||0, calcium: +row[12]||0,
+        iron: +row[13]||0, potassium: +row[14]||0, vitC: +row[15]||0,
+        vitD: +row[16]||0, vitB12: +row[17]||0, vitA: +row[18]||0
+      }
+    }));
+    state.logs.push(...entries);
+    save(); render();
+    showToast(`✅ Imported ${entries.length} log entries from CSV`);
+  } else if (headers.includes('Name')) {
+    // Recipes CSV
+    const recipes = lines.slice(1).map(row => ({
+      id: Date.now().toString() + Math.random(),
+      name: row[0], icon: row[1]||'🍽️', notes: row[2]||'',
+      ingredients: [], steps: [],
+      nutrients: {
+        calories: +row[3]||0, carbs: +row[4]||0, protein: +row[5]||0,
+        fat: +row[6]||0, fiber: +row[7]||0, sugar: +row[8]||0,
+        satFat: +row[9]||0, sodium: +row[10]||0, calcium: +row[11]||0,
+        iron: +row[12]||0, potassium: +row[13]||0, vitC: +row[14]||0,
+        vitD: +row[15]||0, vitB12: +row[16]||0, vitA: +row[17]||0
+      }
+    }));
+    state.recipes.push(...recipes);
+    save(); render();
+    showToast(`✅ Imported ${recipes.length} recipes from CSV`);
+  } else {
+    showToast('⚠️ Unrecognised CSV format');
+  }
+}
+
+async function clearAllData() {
+  const ok = await showConfirm('Clear All Data', 'This will permanently delete ALL logs, recipes and goals. This cannot be undone.', 'Delete Everything', true);
+  if (!ok) return;
+  state.logs = []; state.recipes = []; state.goals = { ...DEFAULT_GOALS };
+  save(); render();
+  showToast('🗑 All data cleared');
+}
+
+// ── Render ────────────────────────────────────────────────────────────────
+
+function render() {
+  const tab = state.currentTab;
+  if (tab === 'today') renderToday();
+  else if (tab === 'log') renderLog();
+  else if (tab === 'recipes') renderRecipes();
+  else if (tab === 'ingredients') renderIngredientsList();
+  else if (tab === 'goals') renderGoals();
+}
+
+// ── Recipes page FAB override ─────────────────────────────────────────────
+document.querySelector('.fab').addEventListener('click', () => {}, false);
+
+// Replace FAB based on tab
+function updateFab() {
+  const fab = document.querySelector('.fab');
+  if (state.currentTab === 'recipes') {
+    fab.onclick = openRecipeModal;
+    fab.title = 'Add Recipe';
+  } else if (state.currentTab === 'ingredients') {
+    fab.onclick = openAddIngredient;
+    fab.title = 'Add Food';
+  } else {
+    fab.onclick = openAddModal;
+    fab.title = 'Log Meal';
+  }
+}
+
+// Patch switchTab to also update FAB
+const _switchTab = window.switchTab;
+window.switchTab = function(tab) {
+  state.currentTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('page-' + tab).classList.add('active');
+  updateFab();
+  render();
+};
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────
+
+// ── Ingredients Page ─────────────────────────────────────────────────────
+
+const CAT_LABELS = {
+  grain:'🌾 Grains', dairy:'🥛 Dairy', fruit:'🍎 Fruits',
+  vegetable:'🥦 Vegetables', protein:'🥩 Protein', fat:'🫒 Fats & Oils',
+  spice:'🌶️ Spices', other:'📦 Other'
+};
+
+function renderIngredientsList() {
+  const el = document.getElementById('ingredientsList');
+  if (!el) return;
+  const q = (document.getElementById('ingSearchInput')?.value || '').toLowerCase();
+  const filtered = state.ingredients.filter(i => i.name.toLowerCase().includes(q));
+
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-icon">🥕</div><div class="empty-title">No foods yet</div><div class="empty-sub">Tap + to add your first food</div></div>`;
+    return;
+  }
+
+  // Group by category
+  const groups = {};
+  filtered.forEach(i => {
+    const cat = i.category || 'other';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(i);
+  });
+
+  const catOrder = ['grain','dairy','fruit','vegetable','protein','fat','spice','other'];
+  let html = '';
+  catOrder.forEach(cat => {
+    if (!groups[cat]) return;
+    html += `<div class="cat-header">${CAT_LABELS[cat] || cat}</div>`;
+    groups[cat].forEach(ing => {
+      html += `
+        <div class="ing-item ${ing.category||'other'}" onclick="openEditIngredient('${ing.id}')">
+          <div class="ing-icon">${ing.icon || '🥕'}</div>
+          <div class="ing-info">
+            <div class="ing-name">${ing.name}</div>
+            <div class="ing-sub">${fmt(ing.nutrients.calories)} kcal · P:${fmt(ing.nutrients.protein)}g C:${fmt(ing.nutrients.carbs)}g F:${fmt(ing.nutrients.fat)}g <span style="color:var(--text3);font-size:10px">per 100g</span></div>
+          </div>
+          <div class="ing-actions" onclick="event.stopPropagation()">
+            <button class="ing-btn ing-btn-build" onclick="openRecipeBuilderWith('${ing.id}')">+ Recipe</button>
+            <button class="ing-btn ing-btn-edit" onclick="openEditIngredient('${ing.id}')">✏️</button>
+          </div>
+        </div>`;
+    });
+  });
+  el.innerHTML = html;
+}
+
+let ingMeasurements = [];
+
+function renderMeasurements() {
+  const el = document.getElementById('ingMeasurementList');
+  if (!el) return;
+  if (!ingMeasurements.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:2px 0 4px">None yet — add below, or leave empty to use grams only</div>';
+    return;
+  }
+  el.innerHTML = ingMeasurements.map((m, i) => `<div class="meas-row"><span class="meas-row-label">1 ${m.unit}</span><span style="font-size:12px;color:var(--text3)">=</span><span class="meas-row-val">${m.grams}g</span><button class="meas-row-del" onclick="removeMeasurement(${i})">×</button></div>`).join('');
+}
+
+function addMeasurement() {
+  const unit = document.getElementById('ingMeasUnit').value;
+  const grams = parseFloat(document.getElementById('ingMeasGrams').value);
+  if (!unit || !grams || grams <= 0) { showToast('⚠️ Enter a valid gram equivalent'); return; }
+  const ex = ingMeasurements.findIndex(m => m.unit === unit);
+  if (ex > -1) ingMeasurements[ex].grams = grams;
+  else ingMeasurements.push({ unit, grams });
+  document.getElementById('ingMeasGrams').value = '';
+  renderMeasurements();
+  showToast('✅ 1 ' + unit + ' = ' + grams + 'g');
+}
+
+function removeMeasurement(i) { ingMeasurements.splice(i, 1); renderMeasurements(); }
+
+function openAddIngredient() {
+  state.editingIngId = null;
+  state.selectedEmojiIng = '🥕';
+  ingMeasurements = [];
+  document.getElementById('ingModalTitle').textContent = 'Add Food';
+  document.getElementById('ingName').value = '';
+  document.getElementById('ingCategory').value = 'other';
+  document.getElementById('ingDeleteBtn').style.display = 'none';
+  buildEmojiPicker('emojiPickerIng', 'selectedEmojiIng');
+  buildNutrientFields('ingNutrientFields', null);
+  renderMeasurements();
+  document.getElementById('ingredientModal').classList.add('open');
+}
+
+function openEditIngredient(id) {
+  const ing = state.ingredients.find(i => i.id === id);
+  if (!ing) return;
+  state.editingIngId = id;
+  state.selectedEmojiIng = ing.icon || '🥕';
+  document.getElementById('ingModalTitle').textContent = 'Edit Food';
+  document.getElementById('ingName').value = ing.name;
+  document.getElementById('ingCategory').value = ing.category || 'other';
+  document.getElementById('ingDeleteBtn').style.display = '';
+  buildEmojiPicker('emojiPickerIng', 'selectedEmojiIng');
+  ingMeasurements = ing.measurements ? [...ing.measurements] : [];
+  buildNutrientFields('ingNutrientFields', ing.nutrients);
+  renderMeasurements();
+  document.getElementById('ingredientModal').classList.add('open');
+}
+
+function saveIngredient() {
+  const name = document.getElementById('ingName').value.trim();
+  if (!name) { showToast('⚠️ Enter a food name'); return; }
+  const nutrients = getNutrientValues('ingNutrientFields');
+  const category = document.getElementById('ingCategory').value;
+  const icon = state.selectedEmojiIng;
+
+  const measurements = [...ingMeasurements];
+  if (state.editingIngId) {
+    const idx = state.ingredients.findIndex(i => i.id === state.editingIngId);
+    if (idx > -1) state.ingredients[idx] = { ...state.ingredients[idx], name, icon, category, nutrients, measurements };
+    showToast('✅ Food updated!');
+  } else {
+    state.ingredients.push({ id: Date.now().toString(), name, icon, category, nutrients, measurements });
+    showToast('✅ Food saved!');
+  }
+  save();
+  closeModal('ingredientModal');
+  renderIngredientsList();
+}
+
+async function deleteCurrentIngredient() {
+  const ok = await showConfirm('Delete Food', 'Remove this food from your database?', 'Delete', true);
+  if (!ok) return;
+  state.ingredients = state.ingredients.filter(i => i.id !== state.editingIngId);
+  save(); closeModal('ingredientModal');
+  renderIngredientsList();
+  showToast('🗑 Food deleted');
+}
+
+// ── Recipe Builder ────────────────────────────────────────────────────────
+
+let rbIngredients = []; // [{id, name, icon, amount}]
+
+function openRecipeBuilderWith(ingId) {
+  rbIngredients = [];
+  state.selectedEmojiRB = '🍽️';
+  document.getElementById('rbName').value = '';
+  document.getElementById('rbServings').value = 1;
+  buildEmojiPicker('emojiPickerRB', 'selectedEmojiRB');
+  document.getElementById('rbSearch').value = '';
+  renderRBSearch();
+  renderRBIngredients();
+  updateRBPreview();
+  document.getElementById('recipeBuilderModal').classList.add('open');
+  // Pre-add the ingredient that was clicked
+  if (ingId) {
+    const ing = state.ingredients.find(i => i.id === ingId);
+    if (ing) { rbIngredients.push({ id: ing.id, name: ing.name, icon: ing.icon, amount: 100 }); renderRBIngredients(); updateRBPreview(); }
+  }
+}
+
+function renderRBSearch() {
+  const q = (document.getElementById('rbSearch')?.value || '').toLowerCase();
+  const el = document.getElementById('rbSearchResults');
+  if (!q) { el.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0">Type to search foods…</div>`; return; }
+  const results = state.ingredients.filter(i => i.name.toLowerCase().includes(q)).slice(0, 8);
+  if (!results.length) { el.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:8px 0">No foods found</div>`; return; }
+  el.innerHTML = results.map(i => `
+    <div class="rb-result">
+      <span class="rb-result-icon">${i.icon||'🥕'}</span>
+      <div class="rb-result-info">
+        <div class="rb-result-name">${i.name}</div>
+        <div class="rb-result-cal">${fmt(i.nutrients.calories)} kcal per 100g</div>
+      </div>
+      <button class="rb-add-btn" onclick="rbAddIngredient('${i.id}')">Add</button>
+    </div>`).join('');
+}
+
+function rbAddIngredient(id) {
+  const ing = state.ingredients.find(i => i.id === id);
+  if (!ing) return;
+  // If already added, just focus its amount field
+  const existing = rbIngredients.find(r => r.id === id);
+  if (existing) { showToast('Already added — adjust the amount below'); return; }
+  rbIngredients.push({ id: ing.id, name: ing.name, icon: ing.icon, amount: 100 });
+  document.getElementById('rbSearch').value = '';
+  renderRBSearch();
+  renderRBIngredients();
+  updateRBPreview();
+}
+
+function rbRemoveIngredient(id) {
+  rbIngredients = rbIngredients.filter(r => r.id !== id);
+  renderRBIngredients();
+  updateRBPreview();
+}
+
+function rbUpdateAmount(id, val) {
+  const r = rbIngredients.find(r => r.id === id);
+  if (r) { r.amount = parseFloat(val) || 0; updateRBPreview(); }
+}
+
+function renderRBIngredients() {
+  const el = document.getElementById('rbIngredientList');
+  if (!rbIngredients.length) {
+    el.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:6px 0">No ingredients added yet</div>`;
+    return;
+  }
+  el.innerHTML = rbIngredients.map(r => `
+    <div class="rb-ing-row">
+      <span style="font-size:16px">${r.icon||'🥕'}</span>
+      <span class="rb-ing-name">${r.name}</span>
+      <input class="rb-ing-amt" type="number" value="${r.amount}" min="0" step="1"
+        oninput="rbUpdateAmount('${r.id}', this.value)"/>
+      <span class="rb-ing-unit">g</span>
+      <button class="rb-ing-del" onclick="rbRemoveIngredient('${r.id}')">×</button>
+    </div>`).join('');
+}
+
+function updateRBPreview() {
+  const totals = {};
+  NUTRIENTS.forEach(n => totals[n.key] = 0);
+  rbIngredients.forEach(r => {
+    const ing = state.ingredients.find(i => i.id === r.id);
+    if (!ing) return;
+    const factor = r.amount / 100;
+    NUTRIENTS.forEach(n => { totals[n.key] += (ing.nutrients[n.key] || 0) * factor; });
+  });
+  const preview = ['calories','protein','carbs','fat','fiber','sodium'];
+  const labels  = ['Calories','Protein','Carbs','Fat','Fiber','Sodium'];
+  const units   = ['kcal','g','g','g','g','mg'];
+  document.getElementById('rbNutrientPreview').innerHTML = preview.map((k,i) => `
+    <div style="text-align:center;background:var(--card);border-radius:6px;padding:6px 4px">
+      <div style="font-size:13px;font-weight:600;color:var(--text)">${fmt(totals[k],1)}</div>
+      <div style="font-size:9px;color:var(--text3)">${labels[i]} ${units[i]}</div>
+    </div>`).join('');
+  // Store totals for saving
+  window._rbTotals = totals;
+  window._rbIngNames = rbIngredients.map(r => {
+    const ing = state.ingredients.find(i => i.id === r.id);
+    return { name: r.name, amount: r.amount + 'g', icon: r.icon };
+  });
+}
+
+function saveRecipeFromBuilder() {
+  const name = document.getElementById('rbName').value.trim();
+  if (!name) { showToast('⚠️ Enter a recipe name'); return; }
+  if (!rbIngredients.length) { showToast('⚠️ Add at least one ingredient'); return; }
+  const servings = parseFloat(document.getElementById('rbServings').value) || 1;
+  const totals = window._rbTotals || {};
+  const recipe = {
+    id: Date.now().toString(), name,
+    icon: state.selectedEmojiRB,
+    notes: servings > 1 ? servings + ' servings' : '',
+    totalServings: servings,
+    ingredients: rbIngredients.map(r => ({ name: r.name, amount: r.amount + 'g' })),
+    linkedIngredients: rbIngredients.map(r => ({ ingId: r.id, name: r.name, grams: r.amount })),
+    steps: [],
+    nutrients: { ...totals }
+  };
+  state.recipes.push(recipe);
+  save();
+  closeModal('recipeBuilderModal');
+  showToast('💾 Recipe saved from builder!');
+  render();
+}
+
+// ── Export/Import ingredients CSV ─────────────────────────────────────────
+function exportIngredientsCSV() {
+  const nutKeys = ['calories','carbs','protein','fat','fiber','sugar','satFat','sodium','calcium','iron','potassium','vitC','vitD','vitB12','vitA','vitB6','folate','magnesium','zinc'];
+  const headers = ['Name','Icon','Category','Calories(kcal)','Carbs(g)','Protein(g)','Fat(g)','Fiber(g)','Sugar(g)','SatFat(g)','Sodium(mg)','Calcium(mg)','Iron(mg)','Potassium(mg)','VitC(mg)','VitD(IU)','VitB12(mcg)','VitA(mcg)','VitB6(mg)','Folate(mcg)','Magnesium(mg)','Zinc(mg)'];
+  const rows = [headers, ...state.ingredients.map(i => [
+    i.name, i.icon||'', i.category||'other',
+    ...nutKeys.map(k => i.nutrients[k] || 0)
+  ])];
+  downloadCSV(rows, 'nutritrack-foods.csv');
+  showToast('📥 Foods exported as CSV');
+}
+
+load();
+render();
+updateFab();
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+    .then(reg => {
+      // If a new SW is waiting, activate it immediately
+      if (reg.waiting) reg.waiting.postMessage('skipWaiting');
+      reg.addEventListener('updatefound', () => {
+        const newSW = reg.installing;
+        if (newSW) {
+          newSW.addEventListener('statechange', () => {
+            if (newSW.state === 'installed' && navigator.serviceWorker.controller) {
+              newSW.postMessage('skipWaiting');
+            }
+          });
+        }
+      });
+    })
+    .catch(err => console.warn('SW registration failed:', err));
+
+  // Reload once the new SW takes control (only when updating)
+  let refreshing = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) { refreshing = true; /* don't auto-reload, just let it work */ }
+  });
+}
+
+// Add privacy link to goals page unobtrusively
+const privacyNote = document.createElement('p');
+privacyNote.style.cssText = 'text-align:center;font-size:11px;color:var(--text3);padding:8px 0 4px;';
+privacyNote.innerHTML = '<a href="/privacy.html" style="color:var(--text3);text-decoration:none;border-bottom:1px solid var(--border)">Privacy Policy</a> · All data stored locally on your device';
+document.getElementById('page-goals').appendChild(privacyNote);
+
+// ── Custom confirm (replaces browser confirm() which is blocked in PWA) ──
+let _confirmResolve = null;
+// showConfirm: resolves true (OK) or false (Cancel)
+function showConfirm(title, msg, okLabel, danger) {
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    _confirmAltResolve = null;
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent = msg;
+    const okBtn = document.getElementById('confirmOk');
+    okBtn.textContent = okLabel || 'OK';
+    okBtn.className = 'confirm-btn confirm-btn-ok' + (danger ? ' danger' : '');
+    const altBtn = document.getElementById('confirmAlt');
+    altBtn.style.display = 'none';
+    document.getElementById('confirmBtns').classList.remove('three');
+    document.getElementById('confirmOverlay').classList.add('open');
+  });
+}
+
+// showChoice: resolves 'ok', 'alt', or 'cancel'
+// Use for merge vs replace decisions
+let _confirmAltResolve = null;
+function showChoice(title, msg, okLabel, altLabel) {
+  return new Promise(resolve => {
+    _confirmResolve = null;
+    _confirmAltResolve = resolve;
+    document.getElementById('confirmTitle').textContent = title;
+    document.getElementById('confirmMsg').textContent = msg;
+    const okBtn = document.getElementById('confirmOk');
+    okBtn.textContent = okLabel || 'OK';
+    okBtn.className = 'confirm-btn confirm-btn-ok';
+    const altBtn = document.getElementById('confirmAlt');
+    altBtn.textContent = altLabel || 'Other';
+    altBtn.style.display = '';
+    document.getElementById('confirmBtns').classList.add('three');
+    document.getElementById('confirmOverlay').classList.add('open');
+  });
+}
+
+function confirmOk() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  if (_confirmAltResolve) { _confirmAltResolve('ok'); _confirmAltResolve = null; return; }
+  if (_confirmResolve) { _confirmResolve(true); _confirmResolve = null; }
+}
+function confirmAlt() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  if (_confirmAltResolve) { _confirmAltResolve('alt'); _confirmAltResolve = null; }
+}
+function confirmCancel() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  if (_confirmAltResolve) { _confirmAltResolve('cancel'); _confirmAltResolve = null; return; }
+  if (_confirmResolve) { _confirmResolve(false); _confirmResolve = null; }
+}
+</script>
+
+<!-- ADD / EDIT INGREDIENT MODAL -->
+<div class="modal-overlay" id="ingredientModal">
+  <div class="modal" style="max-height:96dvh">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title" id="ingModalTitle">Add Food</div>
+      <button class="modal-close" onclick="closeModal('ingredientModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-section">
+        <label class="form-label">Food Name</label>
+        <input class="form-input" id="ingName" placeholder="e.g. Whole Milk"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div>
+          <label class="form-label">Icon</label>
+          <div class="emoji-picker" id="emojiPickerIng"></div>
+        </div>
+        <div>
+          <label class="form-label">Category</label>
+          <select class="form-input" id="ingCategory" style="cursor:pointer">
+            <option value="grain">🌾 Grain</option>
+            <option value="dairy">🥛 Dairy</option>
+            <option value="fruit">🍎 Fruit</option>
+            <option value="vegetable">🥦 Vegetable</option>
+            <option value="protein">🥩 Protein</option>
+            <option value="fat">🫒 Fat/Oil</option>
+            <option value="spice">🌶️ Spice</option>
+            <option value="other">📦 Other</option>
+          </select>
+        </div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.5">All nutrients are <strong style="color:var(--text2)">per 100g</strong>. The recipe builder will scale automatically.</p>
+      <div class="nutrient-grid" id="ingNutrientFields"></div>
+      <div style="margin-top:16px">
+        <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">📐 Measurements (optional)</div>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:8px;line-height:1.5">How many grams is each unit for this specific food?</p>
+        <div id="ingMeasurementList" style="margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select class="form-input" id="ingMeasUnit" style="flex:1;cursor:pointer">
+            <optgroup label="Volume"><option value="tsp">tsp</option><option value="tbsp">tbsp</option><option value="cup">cup</option><option value="ml">ml</option><option value="l">L</option></optgroup>
+            <optgroup label="Weight"><option value="oz">oz</option><option value="lb">lb</option></optgroup>
+            <optgroup label="Count"><option value="piece">piece</option><option value="slice">slice</option><option value="whole">whole</option><option value="pinch">pinch</option><option value="handful">handful</option></optgroup>
+          </select>
+          <span style="font-size:12px;color:var(--text3);">=</span>
+          <input class="form-input" type="number" id="ingMeasGrams" placeholder="grams" min="0" step="0.01" style="flex:1"/>
+          <span style="font-size:12px;color:var(--text3)">g</span>
+          <button class="add-ing-btn" style="flex-shrink:0" onclick="addMeasurement()">+</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-primary" style="flex:1" id="ingSaveBtn" onclick="saveIngredient()">Save Food</button>
+        <button class="btn btn-secondary" id="ingDeleteBtn" style="display:none;flex:0 0 auto;padding:14px 18px" onclick="deleteCurrentIngredient()">🗑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECIPE BUILDER MODAL -->
+<div class="modal-overlay" id="recipeBuilderModal">
+  <div class="modal" style="max-height:96dvh">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-title">Recipe Builder</div>
+      <button class="modal-close" onclick="closeModal('recipeBuilderModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Recipe name + icon -->
+      <div class="form-section">
+        <label class="form-label">Recipe Name</label>
+        <input class="form-input" id="rbName" placeholder="e.g. Oats with Milk"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div>
+          <label class="form-label">Icon</label>
+          <div class="emoji-picker" id="emojiPickerRB"></div>
+        </div>
+        <div>
+          <label class="form-label">Total Servings</label>
+          <input class="form-input" type="number" id="rbServings" value="1" min="0.25" step="0.25"/>
+        </div>
+      </div>
+      <!-- Search & add ingredient -->
+      <label class="form-label">Add Ingredients</label>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <input class="form-input" id="rbSearch" placeholder="Search foods…" oninput="renderRBSearch()" style="flex:1"/>
+      </div>
+      <div id="rbSearchResults" style="max-height:160px;overflow-y:auto;margin-bottom:12px"></div>
+      <!-- Added ingredients -->
+      <label class="form-label">Ingredients Added</label>
+      <div id="rbIngredientList" style="margin-bottom:12px"></div>
+      <!-- Calculated nutrition preview -->
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px">
+        <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Calculated Nutrients (whole recipe)</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px" id="rbNutrientPreview"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveRecipeFromBuilder()">Save as Recipe</button>
+    </div>
+  </div>
+</div>
+
+<!-- Custom confirm dialog -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">Confirm</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns" id="confirmBtns">
+      <button class="confirm-btn confirm-btn-cancel" onclick="confirmCancel()">Cancel</button>
+      <button class="confirm-btn confirm-btn-alt" id="confirmAlt" onclick="confirmAlt()" style="display:none">Alt</button>
+      <button class="confirm-btn confirm-btn-ok" id="confirmOk" onclick="confirmOk()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Persistent hidden file inputs — always in DOM so click works in PWA -->
+<input class="file-input-hidden" type="file" id="filePickerCSV" accept=".csv"/>
+<input class="file-input-hidden" type="file" id="filePickerJSON" accept=".json"/>
+
+</body>
+</html>
