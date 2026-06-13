@@ -1028,27 +1028,28 @@ html, body {
     <div class="modal-body">
       <!-- Quick log from saved recipes -->
       <div id="quickRecipes"></div>
-      <div class="divider"><div class="divider-line"></div><div class="divider-text">OR LOG CUSTOM</div><div class="divider-line"></div></div>
-
-      <div class="form-section">
-        <label class="form-label">Recipe / Meal Name</label>
-        <input class="form-input" id="addName" placeholder="e.g. Sooji Chella" />
-      </div>
-      <div class="form-section">
-        <label class="form-label">Icon</label>
-        <div class="emoji-picker" id="emojiPicker"></div>
-      </div>
-      <div class="form-section">
-        <label class="form-label">Nutrients</label>
-        <div class="nutrient-grid" id="nutrientFields"></div>
-      </div>
-      <div class="form-section">
-        <label class="form-label">Meal Time</label>
-        <input class="form-input" type="time" id="addTime"/>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:4px">
-        <button class="btn btn-primary" style="flex:2" onclick="logMeal()">Log Meal</button>
-        <button class="btn btn-secondary" style="flex:1" onclick="saveAndLogMeal()">Save + Log</button>
+      <div id="addModalCustomSection">
+        <div class="divider"><div class="divider-line"></div><div class="divider-text">OR LOG CUSTOM</div><div class="divider-line"></div></div>
+        <div class="form-section">
+          <label class="form-label">Recipe / Meal Name</label>
+          <input class="form-input" id="addName" placeholder="e.g. Sooji Chella" />
+        </div>
+        <div class="form-section">
+          <label class="form-label">Icon</label>
+          <div class="emoji-picker" id="emojiPicker"></div>
+        </div>
+        <div class="form-section">
+          <label class="form-label">Nutrients</label>
+          <div class="nutrient-grid" id="nutrientFields"></div>
+        </div>
+        <div class="form-section">
+          <label class="form-label">Meal Time</label>
+          <input class="form-input" type="time" id="addTime"/>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-primary" style="flex:2" onclick="logMeal()">Log Meal</button>
+          <button class="btn btn-secondary" style="flex:1" onclick="saveAndLogMeal()">Save + Log</button>
+        </div>
       </div>
     </div>
   </div>
@@ -1752,7 +1753,18 @@ function applyTrackingMode() {
 
 // ── Modal ─────────────────────────────────────────────────────────────────
 
+function openLogModal() {
+  // Recipes-only version of addModal — no custom entry form
+  const custom = document.getElementById('addModalCustomSection');
+  custom.style.display = 'none';
+  document.getElementById('addModalTitle').textContent = 'Log Meal';
+  openAddModal();
+}
+
 function openAddModal() {
+  // Restore custom section in case it was hidden by openLogModal
+  document.getElementById('addModalCustomSection').style.display = '';
+  document.getElementById('addModalTitle').textContent = 'Add Meal';
   // Quick recipes list
   const qEl = document.getElementById('quickRecipes');
   if (state.recipes.length > 0) {
@@ -2757,6 +2769,9 @@ function updateFab() {
   } else if (state.currentTab === 'ingredients') {
     fab.onclick = openAddIngredient;
     fab.title = 'Add Food';
+  } else if (state.currentTab === 'log') {
+    fab.onclick = openLogModal;
+    fab.title = 'Log Meal';
   } else if (state.currentTab === 'goals') {
     fab.style.display = 'none';
   } else {
@@ -2925,16 +2940,42 @@ async function deleteCurrentIngredient() {
 // ── Recipe Builder ────────────────────────────────────────────────────────
 
 let rbIngredients = []; // [{id, name, icon, amount}]
+let rbSteps = []; // [string]
+
+function rbAddStep() {
+  const txt = document.getElementById('rbStepText').value.trim();
+  if (!txt) return;
+  rbSteps.push(txt);
+  document.getElementById('rbStepText').value = '';
+  renderRBSteps();
+}
+function rbRemoveStep(i) {
+  rbSteps.splice(i, 1);
+  renderRBSteps();
+}
+function renderRBSteps() {
+  const el = document.getElementById('rbStepsList');
+  if (!rbSteps.length) { el.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:4px 0">No steps added yet</div>`; return; }
+  el.innerHTML = rbSteps.map((s, i) => `
+    <div class="rb-ing-row" style="align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:12px;font-weight:600;color:var(--text3);min-width:20px;padding-top:2px">${i + 1}.</span>
+      <span style="flex:1;font-size:13px;line-height:1.5">${s}</span>
+      <button class="rb-ing-del" onclick="rbRemoveStep(${i})">×</button>
+    </div>`).join('');
+}
 
 function openRecipeBuilderWith(ingId) {
   rbIngredients = [];
+  rbSteps = [];
   state.selectedEmojiRB = '🍽️';
   document.getElementById('rbName').value = '';
   document.getElementById('rbServings').value = 1;
+  document.getElementById('rbStepText').value = '';
   buildEmojiPicker('emojiPickerRB', 'selectedEmojiRB');
   document.getElementById('rbSearch').value = '';
   renderRBSearch();
   renderRBIngredients();
+  renderRBSteps();
   updateRBPreview();
   document.getElementById('recipeBuilderModal').classList.add('open');
   // Pre-add the ingredient that was clicked
@@ -3040,7 +3081,7 @@ function saveRecipeFromBuilder() {
     totalServings: servings,
     ingredients: rbIngredients.map(r => ({ name: r.name, amount: r.amount + 'g' })),
     linkedIngredients: rbIngredients.map(r => ({ ingId: r.id, name: r.name, grams: r.amount })),
-    steps: [],
+    steps: rbSteps.slice(),
     nutrients: { ...totals }
   };
   state.recipes.push(recipe);
@@ -3245,6 +3286,13 @@ function confirmCancel() {
       <!-- Added ingredients -->
       <label class="form-label">Ingredients Added</label>
       <div id="rbIngredientList" style="margin-bottom:12px"></div>
+      <!-- Steps -->
+      <label class="form-label">Cooking Steps</label>
+      <div id="rbStepsList" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <textarea class="form-input" id="rbStepText" placeholder="Describe this step…" style="flex:1;resize:none;min-height:60px"></textarea>
+        <button class="add-ing-btn" style="align-self:flex-end" onclick="rbAddStep()">+</button>
+      </div>
       <!-- Calculated nutrition preview -->
       <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px">
         <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Calculated Nutrients (whole recipe)</div>
