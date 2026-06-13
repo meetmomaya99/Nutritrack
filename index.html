@@ -57,21 +57,23 @@
 
 html, body {
   height: 100%; width: 100%;
-  background: var(--bg);
+  background: #0a120a;
   color: var(--text);
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.5;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
 }
 
 /* ── Layout ── */
 #app {
   display: flex; flex-direction: column;
   height: 100dvh;
+  width: 100%;
   max-width: 480px;
-  margin: 0 auto;
   position: relative;
   overflow: hidden;
 }
