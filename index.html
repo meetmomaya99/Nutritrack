@@ -484,7 +484,7 @@ html, body {
 .ingredient-row-del:hover { color: var(--danger); }
 
 .add-ingredient-row {
-  display: flex; gap: 6px; align-items: flex-end;
+  display: flex; gap: 6px; align-items: center;
 }
 .add-ingredient-row .form-input { flex: 2; }
 .add-ingredient-row .form-input.amount { flex: 1; }
@@ -538,34 +538,34 @@ html, body {
 .add-ing-btn-standalone:active { transform: scale(0.95); }
 
 .nutrient-summary-grid {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: 6px; margin-bottom: 12px;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 6px; margin-bottom: 14px;
 }
 .ns-cell {
   background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 8px; padding: 8px 10px; text-align: center;
+  border-radius: 8px; padding: 10px 8px; text-align: center;
 }
-.ns-val { font-family: var(--font-display); font-size: 15px; color: var(--accent3); }
-.ns-label { font-size: 9px; color: var(--text3); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+.ns-val { font-family: var(--font-display); font-size: 16px; color: var(--accent3); line-height: 1; }
+.ns-label { font-size: 9px; color: var(--text3); font-weight: 600; text-transform: uppercase; margin-top: 3px; letter-spacing: 0.4px; }
 
 .tab-switcher {
   display: flex; gap: 4px; margin-bottom: 14px;
   background: var(--bg3); border-radius: 10px; padding: 3px;
 }
 .tab-sw-btn {
-  flex: 1; padding: 7px; border: none; border-radius: 8px;
+  flex: 1; padding: 7px 4px; border: 1px solid transparent; border-radius: 8px;
   background: transparent; color: var(--text3);
   font-family: var(--font-body); font-size: 12px; font-weight: 500;
   cursor: pointer; transition: all 0.2s;
 }
-.tab-sw-btn.active { background: var(--card2); color: var(--text); border: 1px solid var(--border); }
+.tab-sw-btn.active { background: var(--card2); color: var(--text); border-color: var(--border2); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
 
 
 /* ── Export / Import / Backup ── */
 .data-inline-card {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 14px 16px;
-  margin-top: 10px; margin-bottom: 4px;
+  margin-top: 0; margin-bottom: 12px;
 }
 .data-inline-title {
   font-size: 12px; font-weight: 600; color: var(--text2);
@@ -744,7 +744,82 @@ html, body {
 /* tracking mode toggle */
 .tracking-toggle { display:flex; background:var(--bg3); border:1px solid var(--border); border-radius:20px; padding:3px; gap:3px; margin-bottom:14px; }
 .tracking-toggle button { flex:1; border:none; background:none; border-radius:16px; padding:6px 10px; font-size:13px; cursor:pointer; color:var(--text2); transition:background 0.2s, color 0.2s; }
-.tracking-toggle button.active { background:var(--green); color:#fff; font-weight:600; }
+.tracking-toggle button.active { background:var(--accent2); color:#fff; font-weight:600; }
+
+/* ── Number input — hide browser spinners ── */
+input[type=number] { -moz-appearance: textfield; }
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* ── Linked ingredient row — consistent baseline ── */
+.linked-row { align-items: center; }
+.linked-row-amt { padding: 6px 8px; height: 32px; }
+.linked-row-unit { padding: 5px 4px; height: 32px; appearance: none; -webkit-appearance: none; }
+.linked-row-del { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; transition: color 0.15s; }
+
+/* ── Recipe detail header ── */
+.recipe-btn-log { padding: 7px 14px; white-space: nowrap; align-self: flex-start; margin-top: 2px; }
+
+/* ── Log item — consistent min-height, delete centered ── */
+.log-item { min-height: 60px; }
+.log-item-del { width: 32px; height: 32px; border-radius: 8px; }
+
+/* ── Settings modal data cards — spacing ── */
+.data-inline-card { margin-top: 0; margin-bottom: 12px; }
+
+/* ── Goals page inputs ── */
+.goal-input { padding: 7px 10px; }
+
+/* ── Icon button SVG centering ── */
+.ing-btn svg, .recipe-btn svg { display: block; }
+
+/* ── Tab bar — active tab icon stroke ── */
+.tab.active svg { stroke: #fff; }
+
+/* ── Nutrient input — no clipping ── */
+.nutrient-input { padding: 9px 38px 9px 10px; }
+
+/* ── Form section gap consistency ── */
+.form-section { margin-bottom: 14px; }
+
+/* ── Modal body scroll ── */
+.modal-body { overflow-y: auto; }
+
+/* ── Consistent add-ingredient-row height ── */
+.add-ingredient-row { align-items: center; }
+.add-ingredient-row .form-input { height: 42px; padding-top: 0; padding-bottom: 0; line-height: 42px; }
+.add-ingredient-row .add-ing-btn { flex-shrink: 0; }
+
+/* ── recipe-actions vertical alignment with food name ── */
+.recipe-item { align-items: center; }
+.recipe-actions { align-items: center; }
+.recipe-btn-log { padding: 7px 12px; height: 32px; }
+.recipe-btn-edit,
+.recipe-btn-del  { height: 32px; }
+
+/* ── Ingredient page items — edit/del centered ── */
+.ing-item { align-items: center; }
+
+/* ── Weekly history bars — consistent gap ── */
+.history-day { margin-bottom: 8px; }
+
+/* ── Nutrient summary grid — even spacing ── */
+.nutrient-summary-grid { gap: 8px; }
+.ns-cell { padding: 10px; }
+.ns-val  { font-size: 16px; }
+.ns-label { font-size: 10px; margin-top: 3px; letter-spacing: 0.3px; }
+
+/* ── Page consistent side padding ── */
+.page { padding-left: 16px; padding-right: 16px; }
+
+/* ── Section title top spacing ── */
+.section-title { margin-top: 8px; margin-bottom: 12px; }
+
+/* ── Data button grid consistent height ── */
+.data-btn { min-height: 64px; }
+
+/* ── Emoji picker wrap nicely ── */
+.emoji-picker { gap: 8px; }
 </style>
 </head>
 <body>
@@ -944,7 +1019,7 @@ html, body {
       </div>
       <!-- Search -->
       <div style="position:relative;margin-bottom:10px">
-        <input class="form-input" id="ingSearchInput" placeholder="🔍 Search foods…" oninput="renderIngredientsList()" style="padding-left:14px"/>
+        <input class="form-input" id="ingSearchInput" placeholder="🔍 Search foods…" oninput="renderIngredientsList()"/>
       </div>
       <div id="ingredientsList"></div>
       <!-- Data card -->
@@ -1005,7 +1080,7 @@ html, body {
       <button class="modal-close" onclick="closeModal('addModal')">×</button>
     </div>
     <div class="modal-body">
-      <input id="recipeSearchInput" type="search" placeholder="Search recipes…" oninput="filterLogRecipes(this.value)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box">
+      <input class="form-input" id="recipeSearchInput" type="search" placeholder="Search recipes…" oninput="filterLogRecipes(this.value)" style="margin-bottom:10px">
       <div id="quickRecipes"></div>
       <div id="noRecipesMsg" style="display:none;text-align:center;padding:24px 0;color:var(--text3);font-size:13px">No saved recipes yet.<br>Create one in the Recipes tab first.</div>
       <button onclick="closeModal('addModal');openRecipeDetail(null)" style="width:100%;margin-top:10px;padding:11px;border:1px dashed var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
@@ -1031,7 +1106,7 @@ html, body {
           <div class="recipe-detail-name" id="rdName"></div>
           <div class="recipe-detail-notes" id="rdNotes"></div>
         </div>
-        <button class="recipe-btn recipe-btn-log" style="height:36px" onclick="logFromDetailModal()">Log Now</button>
+        <button class="recipe-btn recipe-btn-log" onclick="logFromDetailModal()">Log Now</button>
       </div>
 
       <!-- Nutrient summary strip -->
@@ -1084,7 +1159,7 @@ html, body {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
           <div>
             <label class="form-label">Total Servings</label>
-            <input class="form-input" type="number" id="rdEditServings" placeholder="1" min="0.25" step="0.25"/>
+            <input class="form-input" type="number" id="rdEditServings" placeholder="e.g. 4" min="0.25" step="0.25"/>
           </div>
           <div>
             <label class="form-label">Serving Label</label>
@@ -1114,11 +1189,11 @@ html, body {
       <button class="modal-close" onclick="closeModal('servingsModal')">×</button>
     </div>
     <div class="modal-body">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
-        <div style="font-size:32px" id="svIcon">🍽️</div>
-        <div>
-          <div style="font-size:15px;font-weight:500" id="svName"></div>
-          <div style="font-size:12px;color:var(--text3)" id="svInfo"></div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px">
+        <div style="font-size:36px;line-height:1;flex-shrink:0" id="svIcon">🍽️</div>
+        <div style="min-width:0">
+          <div style="font-size:15px;font-weight:600;color:var(--text)" id="svName"></div>
+          <div style="font-size:12px;color:var(--text3);margin-top:2px" id="svInfo"></div>
         </div>
       </div>
 
