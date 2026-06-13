@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.workelf.nutritrack",
+    "sha256_cert_fingerprints": ["48:C4:E9:53:03:33:C2:14:5A:2E:E9:ED:A5:2B:D9:4E:2B:FD:FA:A4:5C:22:BA:7C:E4:AD:F1:AE:F3:CB:FD:F3"]
+  }
+}]
