@@ -1028,6 +1028,7 @@ html, body {
       <button class="modal-close" onclick="closeModal('addModal')">×</button>
     </div>
     <div class="modal-body">
+      <input id="recipeSearchInput" type="search" placeholder="Search recipes…" oninput="filterLogRecipes(this.value)" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--card);color:var(--text);font-size:14px;margin-bottom:10px;box-sizing:border-box">
       <div id="quickRecipes"></div>
       <div id="noRecipesMsg" style="display:none;text-align:center;padding:24px 0;color:var(--text3);font-size:13px">No saved recipes yet.<br>Create one in the Recipes tab first.</div>
     </div>
@@ -1706,14 +1707,14 @@ function applyTrackingMode() {
 
 function openLogModal() { openAddModal(); }
 
-function openAddModal() {
+function renderLogRecipes(recipes) {
   const qEl = document.getElementById('quickRecipes');
   const noMsg = document.getElementById('noRecipesMsg');
-  if (state.recipes.length > 0) {
+  if (recipes.length > 0) {
     noMsg.style.display = 'none';
     qEl.innerHTML = `<div class="form-label" style="margin-bottom:6px">QUICK LOG FROM SAVED</div>
     <div class="quick-recipe-list">
-      ${state.recipes.map(r => `
+      ${recipes.map(r => `
         <button class="quick-recipe-btn" onclick="openServingsLog('${r.id}')">
           <span class="qr-icon">${r.icon}</span>
           <div class="qr-info">
@@ -1725,6 +1726,32 @@ function openAddModal() {
   } else {
     qEl.innerHTML = '';
     noMsg.style.display = '';
+  }
+}
+
+function filterLogRecipes(q) {
+  const filtered = q.trim()
+    ? state.recipes.filter(r => r.name.toLowerCase().includes(q.toLowerCase()))
+    : state.recipes;
+  renderLogRecipes(filtered.length ? filtered : []);
+  document.getElementById('noRecipesMsg').style.display =
+    state.recipes.length === 0 ? '' : (filtered.length === 0 ? '' : 'none');
+  if (state.recipes.length === 0) {
+    document.getElementById('quickRecipes').innerHTML = '';
+  } else if (filtered.length === 0) {
+    document.getElementById('quickRecipes').innerHTML =
+      `<div style="text-align:center;padding:24px 0;color:var(--text3);font-size:13px">No recipes match "${q}"</div>`;
+    document.getElementById('noRecipesMsg').style.display = 'none';
+  }
+}
+
+function openAddModal() {
+  const searchEl = document.getElementById('recipeSearchInput');
+  searchEl.value = '';
+  renderLogRecipes(state.recipes);
+  if (state.recipes.length === 0) {
+    document.getElementById('noRecipesMsg').style.display = '';
+    document.getElementById('quickRecipes').innerHTML = '';
   }
   document.getElementById('addModal').classList.add('open');
 }
@@ -2719,7 +2746,8 @@ function updateFab() {
     fab.onclick = openLogModal;
     fab.title = 'Log Meal';
   } else if (state.currentTab === 'goals') {
-    fab.style.display = 'none';
+    fab.onclick = openLogModal;
+    fab.title = 'Log Meal';
   } else {
     fab.onclick = openAddModal;
     fab.title = 'Log Meal';
