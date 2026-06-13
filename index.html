@@ -374,13 +374,16 @@ html, body {
 .recipe-macros { font-size: 10px; color: var(--text3); margin-top: 3px; }
 .recipe-actions { display: flex; gap: 6px; }
 .recipe-btn {
-  padding: 6px 12px; border-radius: 8px; border: none;
+  border-radius: 8px; border: none;
   font-family: var(--font-body); font-size: 12px; font-weight: 500;
   cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
 }
-.recipe-btn-log { background: var(--accent2); color: #fff; }
-.recipe-btn-del { background: var(--card2); color: var(--text3); border: 1px solid var(--border); }
-.recipe-btn:active { transform: scale(0.95); }
+.recipe-btn-log { padding: 6px 12px; background: var(--accent2); color: #fff; }
+.recipe-btn-edit { width: 32px; height: 32px; background: var(--card2); color: var(--text3); border: 1px solid var(--border); }
+.recipe-btn-del  { width: 32px; height: 32px; background: rgba(201,106,106,0.12); color: var(--danger); border: 1px solid rgba(201,106,106,0.25); }
+.recipe-btn-del:hover { background: rgba(201,106,106,0.22); }
+.recipe-btn:active { transform: scale(0.92); }
 
 /* ── Goals page ── */
 .goal-item {
@@ -676,13 +679,13 @@ html, body {
 .ing-sub  { font-size: 11px; color: var(--text3); margin-top: 2px; }
 .ing-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .ing-btn {
-  padding: 6px 10px; border-radius: 8px; border: none;
-  font-family: var(--font-body); font-size: 11px; font-weight: 500;
+  width: 34px; height: 34px; border-radius: 8px; border: none;
+  display: flex; align-items: center; justify-content: center;
   cursor: pointer; transition: all 0.15s;
 }
-.ing-btn-build { background: var(--accent2); color: #fff; }
-.ing-btn-edit  { background: var(--card2); color: var(--text3); border: 1px solid var(--border); }
-.ing-btn:active { transform: scale(0.95); }
+.ing-btn-del { background: rgba(201,106,106,0.12); color: var(--danger); border: 1px solid rgba(201,106,106,0.25); }
+.ing-btn-del:hover { background: rgba(201,106,106,0.22); }
+.ing-btn:active { transform: scale(0.92); }
 
 .cat-header {
   font-size: 10px; font-weight: 700; color: var(--text3);
@@ -986,7 +989,9 @@ html, body {
 </div><!-- /app -->
 
 <!-- FAB -->
-<button class="fab" onclick="openAddModal()" title="Add meal">+</button>
+<button class="fab" onclick="openAddModal()" title="Add meal">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+</button>
 
 <!-- ADD MEAL MODAL -->
 <!-- Settings Modal -->
@@ -1562,7 +1567,12 @@ function renderRecipes() {
       </div>
       <div class="recipe-actions" onclick="event.stopPropagation()">
         <button class="recipe-btn recipe-btn-log" onclick="openServingsLog('${r.id}')">Log</button>
-        <button class="recipe-btn recipe-btn-del" onclick="openRecipeDetail('${r.id}')">✏️</button>
+        <button class="recipe-btn recipe-btn-edit" onclick="openRecipeDetail('${r.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="recipe-btn recipe-btn-del" onclick="deleteRecipe('${r.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
       </div>
     </div>`).join('');
 }
@@ -2819,8 +2829,9 @@ function renderIngredientsList() {
             <div class="ing-sub">${fmt(ing.nutrients.calories)} kcal · P:${fmt(ing.nutrients.protein)}g C:${fmt(ing.nutrients.carbs)}g F:${fmt(ing.nutrients.fat)}g <span style="color:var(--text3);font-size:10px">per 100g</span></div>
           </div>
           <div class="ing-actions" onclick="event.stopPropagation()">
-            <button class="ing-btn ing-btn-build" onclick="openRecipeBuilderWith('${ing.id}')">+ Recipe</button>
-            <button class="ing-btn ing-btn-edit" onclick="openEditIngredient('${ing.id}')">✏️</button>
+            <button class="ing-btn ing-btn-del" onclick="quickDeleteIngredient('${ing.id}')">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
           </div>
         </div>`;
     });
@@ -2903,6 +2914,14 @@ function saveIngredient() {
   save();
   closeModal('ingredientModal');
   renderIngredientsList();
+}
+
+async function quickDeleteIngredient(id) {
+  const ok = await showConfirm('Delete Food', 'Remove this food from your database?', 'Delete', true);
+  if (!ok) return;
+  state.ingredients = state.ingredients.filter(i => i.id !== id);
+  save(); renderIngredientsList();
+  showToast('🗑 Food deleted');
 }
 
 async function deleteCurrentIngredient() {
@@ -3225,7 +3244,9 @@ function confirmCancel() {
       </div>
       <div style="display:flex;gap:8px;margin-top:14px">
         <button class="btn btn-primary" style="flex:1" id="ingSaveBtn" onclick="saveIngredient()">Save Food</button>
-        <button class="btn btn-secondary" id="ingDeleteBtn" style="display:none;flex:0 0 auto;padding:14px 18px" onclick="deleteCurrentIngredient()">🗑</button>
+        <button class="btn btn-secondary" id="ingDeleteBtn" style="display:none;flex:0 0 auto;padding:14px 18px;color:var(--danger);border-color:rgba(201,106,106,0.4);background:rgba(201,106,106,0.08)" onclick="deleteCurrentIngredient()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
       </div>
     </div>
   </div>
