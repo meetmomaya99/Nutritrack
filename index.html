@@ -2894,12 +2894,6 @@ async function deleteCurrentIngredient() {
   if (!ok) return;
   const delId = state.editingIngId;
   state.ingredients = state.ingredients.filter(i => i.id !== delId);
-  // Remove linked ingredient references from all recipes
-  state.recipes.forEach(r => {
-    if (r.linkedIngredients) {
-      r.linkedIngredients = r.linkedIngredients.filter(l => l.ingId !== delId);
-    }
-  });
   save(); closeModal('ingredientModal');
   renderIngredientsList();
   showToast('🗑 Food deleted');
