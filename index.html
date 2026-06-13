@@ -1161,37 +1161,9 @@ html, body {
         </div>
         <div id="rdLinkResults" style="max-height:120px;overflow-y:auto;margin-bottom:12px"></div>
         <button class="btn btn-primary" style="margin-bottom:14px" onclick="recalcFromLinked()">⚡ Recalculate Nutrients from Linked</button>
-        <!-- Plain text ingredients (for display/steps reference) -->
+        <!-- Plain text ingredients (display only — synced from linked) -->
         <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📋 All Ingredients (display)</div>
         <div class="ingredient-list" id="rdIngredientList"></div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          <input class="form-input" id="rdIngName" placeholder="Ingredient name (e.g. Soji)"/>
-          <div style="display:flex;gap:6px">
-            <input class="form-input" type="number" id="rdIngQty" placeholder="Amount" min="0" step="0.25" style="flex:1"/>
-            <select class="form-input" id="rdIngUnit" style="flex:1;cursor:pointer">
-              <optgroup label="Weight">
-                <option value="g">g</option>
-                <option value="kg">kg</option>
-                <option value="oz">oz</option>
-                <option value="lb">lb</option>
-              </optgroup>
-              <optgroup label="Volume">
-                <option value="ml">ml</option>
-                <option value="l">L</option>
-                <option value="cup">cup</option>
-                <option value="tbsp">tbsp</option>
-                <option value="tsp">tsp</option>
-              </optgroup>
-              <optgroup label="Count">
-                <option value="piece">piece</option>
-                <option value="slice">slice</option>
-                <option value="whole">whole</option>
-                <option value="pinch">pinch</option>
-              </optgroup>
-            </select>
-            <button class="add-ing-btn" onclick="addIngredient()">+</button>
-          </div>
-        </div>
       </div>
 
       <!-- Steps panel -->
@@ -1410,9 +1382,9 @@ function sumNutrients(logs) {
   return sum;
 }
 
-function fmt(val, decimals=0) {
+function fmt(val, decimals=3) {
   if (val === undefined || val === null || isNaN(val)) return '0';
-  return Number(val).toFixed(decimals).replace(/\.0$/, '');
+  return parseFloat(Number(val).toFixed(decimals)).toString();
 }
 
 function pct(val, goal) {
@@ -2178,12 +2150,8 @@ function addLinkedIngredient(ingId) {
   if (r.linkedIngredients.find(l => l.ingId === ingId)) {
     showToast('Already linked — adjust grams below'); return;
   }
-  r.linkedIngredients.push({ ingId, name: ing.name, qty: 100, unit: 'g', qty: 100, unit: 'g', grams: 100 });
-  // Also add to display ingredients if not already there
-  if (!r.ingredients) r.ingredients = [];
-  if (!r.ingredients.find(x => x.name.toLowerCase().includes(ing.name.toLowerCase().split(' ')[0]))) {
-    r.ingredients.push({ name: ing.name, amount: '100g' });
-  }
+  r.linkedIngredients.push({ ingId, name: ing.name, qty: 100, unit: 'g', grams: 100 });
+  syncIngredientsFromLinked(r);
   document.getElementById('rdLinkSearch').value = '';
   document.getElementById('rdLinkResults').innerHTML = '';
   save(); renderLinked(r); renderIngredients(r);
@@ -2215,7 +2183,15 @@ function updateLinkedUnit(selectEl) {
 function removeLinked(index) {
   const r = getRecipe(); if (!r) return;
   r.linkedIngredients.splice(index, 1);
-  save(); renderLinked(r);
+  syncIngredientsFromLinked(r);
+  save(); renderLinked(r); renderIngredients(r);
+}
+
+function syncIngredientsFromLinked(r) {
+  r.ingredients = (r.linkedIngredients || []).map(l => ({
+    name: l.name,
+    amount: (l.qty || l.grams || 0) + (l.unit || 'g')
+  }));
 }
 
 function recalcFromLinked() {
@@ -2491,11 +2467,18 @@ function importCSVByType(text, type) {
       // Parse steps: "1. Step text | 2. Step text"
       const stepsRaw = row[24] || '';
       const steps = stepsRaw ? stepsRaw.split(' | ').filter(Boolean).map(s => s.replace(/^\d+\.\s*/, '').trim()) : [];
+      // Auto-link to saved foods by name
+      const linkedIngredients = ingredients.map(ing => {
+        const match = state.ingredients.find(f => f.name.toLowerCase() === ing.name.toLowerCase());
+        if (!match) return null;
+        const grams = parseFloat(ing.amount) || 100;
+        return { ingId: match.id, name: match.name, qty: grams, unit: 'g', grams };
+      }).filter(Boolean);
       return {
         id: Date.now().toString() + Math.random(),
         name: row[0], icon: row[1]||'🍽️', notes: row[2]||'',
         totalServings: parseFloat(row[3])||1,
-        ingredients, steps,
+        ingredients, steps, linkedIngredients,
         nutrients: {
           calories:+row[4]||0, carbs:+row[5]||0, protein:+row[6]||0,
           fat:+row[7]||0, fiber:+row[8]||0, sugar:+row[9]||0,
