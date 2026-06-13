@@ -1494,7 +1494,7 @@ function renderToday() {
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0,10);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const dayLogs = state.logs.filter(l => l.date === key);
     const cal = sumNutrients(dayLogs).calories;
     days.push({ key, label: i === 0 ? 'Today' : d.toLocaleDateString('en-US',{weekday:'short'}), cal });
