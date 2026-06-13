@@ -980,13 +980,6 @@ html, body {
           <button class="data-btn" onclick="importSpecificCSV('ingredients')"><span class="db-icon">⬆️</span>Import CSV</button>
         </div>
       </div>
-      <div class="data-inline-card" style="border-color:rgba(201,106,106,0.3);background:rgba(201,106,106,0.05)">
-        <div class="data-inline-title" style="color:var(--danger)">⚠️ Danger Zone</div>
-        <button class="data-btn danger-btn" style="width:100%;flex-direction:row;gap:10px;padding:13px 14px" onclick="clearAllFoods()">
-          <span class="db-icon">🗑</span>
-          <div style="text-align:left"><div style="font-size:13px;font-weight:600">Delete All Foods</div><div style="font-size:11px;color:var(--text3)">Permanently delete all saved foods</div></div>
-        </button>
-      </div>
     </div>
 
   </div><!-- /pages -->
@@ -1019,7 +1012,7 @@ html, body {
         <div class="data-inline-title" style="color:var(--danger)">⚠️ Danger Zone</div>
         <button class="data-btn danger-btn" style="width:100%;flex-direction:row;gap:10px;padding:13px 14px" onclick="clearAllData()">
           <span class="db-icon">🗑</span>
-          <div style="text-align:left"><div style="font-size:13px;font-weight:600">Clear All Data</div><div style="font-size:11px;color:var(--text3)">Permanently delete all logs, recipes &amp; goals</div></div>
+          <div style="text-align:left"><div style="font-size:13px;font-weight:600">Clear All Data</div><div style="font-size:11px;color:var(--text3)">Permanently delete all logs, recipes, goals &amp; foods</div></div>
         </button>
       </div>
     </div>
@@ -2691,19 +2684,11 @@ function importCSV(text, filename) {
 }
 
 async function clearAllData() {
-  const ok = await showConfirm('Clear All Data', 'This will permanently delete ALL logs, recipes and goals. This cannot be undone.', 'Delete Everything', true);
+  const ok = await showConfirm('Clear All Data', 'This will permanently delete ALL logs, recipes, goals and foods. This cannot be undone.', 'Delete Everything', true);
   if (!ok) return;
-  state.logs = []; state.recipes = []; state.goals = { ...DEFAULT_GOALS };
-  save(); render();
+  state.logs = []; state.recipes = []; state.goals = { ...DEFAULT_GOALS }; state.ingredients = [];
+  save(); render(); renderIngredientsList();
   showToast('🗑 All data cleared');
-}
-
-async function clearAllFoods() {
-  const ok = await showConfirm('Delete All Foods', 'This will permanently delete all saved foods. This cannot be undone.', 'Delete All', true);
-  if (!ok) return;
-  state.ingredients = [];
-  save(); renderIngredientsList();
-  showToast('🗑 All foods deleted');
 }
 
 // ── Render ────────────────────────────────────────────────────────────────
