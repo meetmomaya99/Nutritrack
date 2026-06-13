@@ -1067,6 +1067,10 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
           <div style="text-align:left"><div style="font-size:13px;font-weight:600">Clear All Data</div><div style="font-size:11px;color:var(--text3)">Permanently delete all logs, recipes, goals &amp; foods</div></div>
         </button>
       </div>
+      <p style="text-align:center;font-size:11px;color:var(--text3);padding:8px 0 2px;margin:0">
+        <a href="/privacy.html" style="color:var(--text3);text-decoration:none;border-bottom:1px solid var(--border)">Privacy Policy</a>
+        · All data stored locally on your device
+      </p>
     </div>
   </div>
 </div>
@@ -2851,11 +2855,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Add privacy link to goals page unobtrusively
-const privacyNote = document.createElement('p');
-privacyNote.style.cssText = 'text-align:center;font-size:11px;color:var(--text3);padding:8px 0 4px;';
-privacyNote.innerHTML = '<a href="/privacy.html" style="color:var(--text3);text-decoration:none;border-bottom:1px solid var(--border)">Privacy Policy</a> · All data stored locally on your device';
-document.getElementById('page-goals').appendChild(privacyNote);
 
 // ── Custom confirm (replaces browser confirm() which is blocked in PWA) ──
 let _confirmResolve = null;
