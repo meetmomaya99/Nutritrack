@@ -3041,11 +3041,11 @@ function saveRecipeFromBuilder() {
 // ── Export/Import ingredients CSV ─────────────────────────────────────────
 function exportIngredientsCSV() {
   const nutKeys = ['calories','carbs','protein','fat','fiber','sugar','satFat','sodium','calcium','iron','potassium','vitC','vitD','vitB12','vitA','vitB6','folate','magnesium','zinc'];
-  const headers = ['Name','Icon','Category','Calories(kcal)','Carbs(g)','Protein(g)','Fat(g)','Fiber(g)','Sugar(g)','SatFat(g)','Sodium(mg)','Calcium(mg)','Iron(mg)','Potassium(mg)','VitC(mg)','VitD(IU)','VitB12(mcg)','VitA(mcg)','VitB6(mg)','Folate(mcg)','Magnesium(mg)','Zinc(mg)'];
-  const rows = [headers, ...state.ingredients.map(i => [
-    i.name, i.icon||'', i.category||'other',
-    ...nutKeys.map(k => i.nutrients[k] || 0)
-  ])];
+  const headers = ['Name','Icon','Category','Calories(kcal)','Carbs(g)','Protein(g)','Fat(g)','Fiber(g)','Sugar(g)','SatFat(g)','Sodium(mg)','Calcium(mg)','Iron(mg)','Potassium(mg)','VitC(mg)','VitD(IU)','VitB12(mcg)','VitA(mcg)','VitB6(mg)','Folate(mcg)','Magnesium(mg)','Zinc(mg)','Conversions'];
+  const rows = [headers, ...state.ingredients.map(i => {
+    const conversions = (i.measurements||[]).map(m => `1 ${m.unit} = ${m.grams}g`).join(' | ');
+    return [i.name, i.icon||'', i.category||'other', ...nutKeys.map(k => i.nutrients[k] || 0), conversions];
+  })];
   downloadCSV(rows, 'nutritrack-foods.csv');
   showToast('📥 Foods exported as CSV');
 }
