@@ -1890,7 +1890,7 @@ function updateServingsPreview() {
     fmt((recipe.nutrients.calories || 0) * perSv) + ' kcal total';
   document.getElementById('svNutrientPreview').innerHTML = preview.map((k,i) => `
     <div style="text-align:center;background:var(--card);border-radius:6px;padding:6px 4px">
-      <div style="font-size:13px;font-weight:600;color:var(--text)">${fmt((recipe.nutrients[k]||0) * perSv, k==='vitB12'?1:0)}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text)">${fmt((recipe.nutrients[k]||0) * perSv)}</div>
       <div style="font-size:9px;color:var(--text3)">${previewLabels[i]} ${previewUnits[i]}</div>
     </div>`).join('');
 }
@@ -2164,11 +2164,11 @@ function updateLinkedQty(index, val) {
   const l = r.linkedIngredients[index];
   l.qty = parseFloat(val) || 0;
   l.grams = toGrams(l.qty, l.unit || 'g', l.ingId);
-  save();
+  syncIngredientsFromLinked(r);
+  save(); renderIngredients(r);
 }
 
 function updateLinkedUnit(selectEl) {
-  // Find which row this select belongs to
   const row = selectEl.closest('.linked-row');
   if (!row) return;
   const index = parseInt(row.dataset.idx);
@@ -2177,7 +2177,9 @@ function updateLinkedUnit(selectEl) {
   const l = r.linkedIngredients[index];
   l.unit = selectEl.value;
   l.grams = toGrams(l.qty !== undefined ? l.qty : l.grams, l.unit, l.ingId);
-  save();
+  syncIngredientsFromLinked(r);
+  save(); renderIngredients(r);
+}
 }
 
 function removeLinked(index) {
